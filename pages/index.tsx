@@ -155,25 +155,6 @@ const HomePage: NextPage = () => {
             </Link>
           </div>
         </section>
-        <section className="section-spaced">
-          <div className="section-title">
-            <div>
-              <h2>Why shop with us?</h2>
-            </div>
-          </div>
-          <div className="feature-grid">
-            {featureHighlights.map((feature) => (
-              <article className="feature-card" key={feature.title}>
-                <span className="feature-icon" aria-hidden="true">
-                  {feature.icon}
-                </span>
-                <h3>{feature.title}</h3>
-                <p>{feature.description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
         <section className="highlight-grid section-spaced">
           {curatedCollections.map((collection) => (
             <article className="highlight-card" key={collection.title}>
