@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend Reference
 
-## Getting Started
+This Next.js UI consumes the Spring Boot API running at http://localhost:8080.
 
-First, run the development server:
+## API Endpoints
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Auth
+- POST http://localhost:8080/api/auth/register
+- POST http://localhost:8080/api/auth/login
+
+Products
+- GET http://localhost:8080/api/products
+- GET http://localhost:8080/api/products/{id}
+- POST http://localhost:8080/api/products
+- PUT http://localhost:8080/api/products/{id}
+- DELETE http://localhost:8080/api/products/{id}
+
+Orders
+- POST http://localhost:8080/api/orders
+- GET http://localhost:8080/api/orders
+- GET http://localhost:8080/api/orders/all
+
+## Entity Fields
+
+User (see User.java:24-53)
+- id: number
+- username: string
+- email: string
+- password: string (never expose in API responses)
+- role: USER | ADMIN
+- orders: Order[] (lazy-loaded, usually omitted)
+
+Product (see Product.java:22-49)
+- id: number
+- name: string
+- description: string | null
+- price: number
+- stock: number
+- imageUrl: string | null
+
+OrderItem (see OrderItem.java:26-56)
+- id: number
+- order: Order (avoid serializing to prevent recursion)
+- product: Product
+- quantity: number
+- price: number
+
+Order (see Order.java:30-70)
+- id: number
+- user: User (often replaced with userId from userId())
+- total: number
+- createdAt: string (ISO timestamp)
+- items: OrderItem[]
+
+## DTO Payloads
+
+LoginRequest (LoginRequest.java:5-15)
+```
+{ "username": string, "password": string }
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+RegisterRequest (RegisterRequest.java:5-19)
+```
+{ "username": string, "email": string, "password": string }
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+LoginResponse (LoginResponse.java:5-10)
+```
+{ "token": string, "expiresAt": string, "tokenType": "Bearer" }
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+OrderRequest (OrderRequest.java:7-25)
+```
+{ "items": [{ "productId": number, "quantity": number }] }
+```
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Frontend consumers should treat numeric identifiers as numbers, timestamps as ISO strings, and respect nullable properties like description and imageUrl.
