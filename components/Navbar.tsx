@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/router';
-import { clearAuthToken, getAuthToken, hasRequiredRole } from '../utils/auth';
+import { useAuth } from '../context/AuthContext';
+import { clearAuthToken } from '../utils/auth';
 import { useCartCount } from '../hooks/useCartCount';
 
 const TOKEN_KEY = 'auth_token';
@@ -12,31 +13,11 @@ type AuthState = {
   role: 'ADMIN' | 'USER' | null;
 };
 
-const readAuthState = (): AuthState => {
-  const token = getAuthToken();
-
-  if (!token) {
-    return { isAuthenticated: false, role: null };
-  }
-
-  if (hasRequiredRole('ADMIN')) {
-    return { isAuthenticated: true, role: 'ADMIN' };
-  }
-
-  if (hasRequiredRole('USER')) {
-    return { isAuthenticated: true, role: 'USER' };
-  }
-
-  return { isAuthenticated: true, role: null };
-};
-
 const Navbar = () => {
-  const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false,
-    role: null,
-  });
+  const { user, isAuthenticated, signOut } = useAuth();
   const [searchValue, setSearchValue] = useState('');
   const [isClient, setIsClient] = useState(false);
+  const [prevAuthState, setPrevAuthState] = useState<boolean | null>(null);
   const cartCount = useCartCount();
   const router = useRouter();
 
@@ -45,18 +26,29 @@ const Navbar = () => {
     setIsClient(true);
   }, []);
 
+  // Track auth state changes and reload page on login (only on home page)
   useEffect(() => {
-    setAuthState(readAuthState());
+    if (!isClient) return;
+    
+    // First time loading, just set the prev state
+    if (prevAuthState === null) {
+      setPrevAuthState(isAuthenticated);
+      return;
+    }
 
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === TOKEN_KEY || event.key === ROLE_KEY) {
-        setAuthState(readAuthState());
-      }
-    };
-
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
+    // Refresh page when authentication state changes from false to true (login success)
+    // Only reload on home page to avoid interfering with checkout or other pages
+    if (isAuthenticated && !prevAuthState && user && router.pathname === '/') {
+      // Small delay to ensure state is fully updated before refresh
+      const timer = setTimeout(() => {
+        window.location.reload();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+    
+    // Update prev state for next comparison
+    setPrevAuthState(isAuthenticated);
+  }, [isAuthenticated, isClient, prevAuthState, user, router.pathname]);
 
   useEffect(() => {
     if (router.pathname === '/search' && typeof router.query.q === 'string') {
@@ -75,9 +67,9 @@ const Navbar = () => {
   }, [router.pathname, router.query.q, router.query.search]);
 
   const handleSignOut = useCallback(() => {
-    clearAuthToken();
-    setAuthState({ isAuthenticated: false, role: null });
-  }, []);
+    signOut();
+    void router.push('/', undefined, { scroll: true });
+  }, [signOut, router]);
 
   const handleSearchSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -153,19 +145,21 @@ const Navbar = () => {
               </span>
             )}
           </Link>
-          {authState.role === 'ADMIN' && (
+          {user?.role === 'ADMIN' && (
             <Link className="nav-link" href="/dashboard">
               Dashboard
             </Link>
           )}
-          {authState.isAuthenticated ? (
-            <button className="button button-ghost" type="button" onClick={handleSignOut}>
-              Sign Out
-            </button>
-          ) : (
-            <Link className="button button-primary" href="/login">
-              Sign In
-            </Link>
+          {isClient && (
+            isAuthenticated ? (
+              <button className="button button-ghost" type="button" onClick={handleSignOut}>
+                Sign Out
+              </button>
+            ) : (
+              <Link className="button button-primary" href="/login">
+                Sign In
+              </Link>
+            )
           )}
         </div>
       </nav>

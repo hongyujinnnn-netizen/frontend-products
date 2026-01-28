@@ -9,6 +9,7 @@ import {
 import type { User } from '../types/user';
 import { signIn as apiSignIn, signUp as apiSignUp } from '../services/auth';
 import { getErrorMessage } from '../services/apiError';
+import { getAuthToken, storeAuthToken, clearAuthToken } from '../utils/auth';
 
 /**
  * Authentication Context
@@ -28,7 +29,6 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
 
 interface TokenPayload {
@@ -64,6 +64,33 @@ function isTokenExpired(token: string): boolean {
   return payload.exp < now;
 }
 
+/**
+ * Extract role from JWT token
+ */
+function getRoleFromToken(token: string): 'USER' | 'ADMIN' | null {
+  try {
+    const payload = decodeToken(token);
+    if (!payload) return null;
+    
+    const payloadObj = payload as Record<string, any>;
+    const role = (payloadObj.role || payloadObj.roles || payloadObj.authorities) as any;
+    
+    if (Array.isArray(role) && role.length > 0) {
+      const roleStr = role[0].toString().toUpperCase();
+      return roleStr.includes('ADMIN') ? 'ADMIN' : 'USER';
+    }
+    
+    if (typeof role === 'string') {
+      const roleStr = role.toUpperCase();
+      return roleStr.includes('ADMIN') ? 'ADMIN' : 'USER';
+    }
+    
+    return 'USER';
+  } catch {
+    return 'USER';
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,24 +98,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth state from localStorage on mount
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const storedUser = localStorage.getItem(USER_KEY);
+    const initAuth = () => {
+      const token = getAuthToken();
+      const storedUser = localStorage.getItem(USER_KEY);
 
-    if (token && !isTokenExpired(token) && storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        // Invalid stored user, clear auth
-        localStorage.removeItem(TOKEN_KEY);
+      if (token && !isTokenExpired(token)) {
+        try {
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser) as User;
+            // Ensure role is always extracted from token as backup
+            if (!parsedUser.role) {
+              parsedUser.role = getRoleFromToken(token) || 'USER';
+              localStorage.setItem(USER_KEY, JSON.stringify(parsedUser));
+            }
+            setUser(parsedUser);
+          } else {
+            // Token exists but no stored user - create from token
+            const roleFromToken = getRoleFromToken(token) || 'USER';
+            const userData: User = {
+              id: 0,
+              email: '',
+              username: '',
+              role: roleFromToken,
+            };
+            setUser(userData);
+          }
+        } catch {
+          // Invalid stored user, clear auth
+          clearAuthToken();
+          localStorage.removeItem(USER_KEY);
+          setUser(null);
+        }
+      } else if (token && isTokenExpired(token)) {
+        // Token expired, clear auth
+        clearAuthToken();
         localStorage.removeItem(USER_KEY);
+        setUser(null);
+      } else {
+        setUser(null);
       }
-    } else if (token) {
-      // Token expired, clear auth
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
-    }
 
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    initAuth();
+
+    // Listen for storage changes from other tabs
+    const handleStorageChange = () => {
+      initAuth();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const signIn = useCallback(async (username: string, password: string) => {
@@ -97,15 +158,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await apiSignIn({ username, password });
       
-      // Store token
-      localStorage.setItem(TOKEN_KEY, response.token);
+      // Store token using utility
+      storeAuthToken(response.token, { role: response.role, expiresAt: response.expiresAt });
+      
+      // Extract role from token if not in response
+      const roleFromResponse = response.role as 'USER' | 'ADMIN' | undefined;
+      const roleFromToken = getRoleFromToken(response.token);
+      const finalRole = roleFromResponse || roleFromToken || 'USER';
       
       // Store user info
       const userData: User = {
         id: 0,
         email: username,
         username,
-        role: (response.role as 'USER' | 'ADMIN') || 'USER',
+        role: finalRole,
       };
       localStorage.setItem(USER_KEY, JSON.stringify(userData));
       
@@ -125,15 +191,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await apiSignUp({ username, email, password });
       
-      // Store token
-      localStorage.setItem(TOKEN_KEY, response.token);
+      // Store token using utility
+      storeAuthToken(response.token, { role: response.role, expiresAt: response.expiresAt });
+      
+      // Extract role from token if not in response
+      const roleFromResponse = response.role as 'USER' | 'ADMIN' | undefined;
+      const roleFromToken = getRoleFromToken(response.token);
+      const finalRole = roleFromResponse || roleFromToken || 'USER';
       
       // Store user info
       const userData: User = {
         id: 0,
         email,
         username,
-        role: (response.role as 'USER' | 'ADMIN') || 'USER',
+        role: finalRole,
       };
       localStorage.setItem(USER_KEY, JSON.stringify(userData));
       
@@ -148,7 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
+    clearAuthToken();
     localStorage.removeItem(USER_KEY);
     setUser(null);
     setError(null);

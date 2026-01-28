@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { NextPage } from 'next';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useMessage } from '../hooks/useMessage';
 import { useOrders } from '../hooks/useOrders';
 import { getCartItems, removeFromCart, clearCart } from '../utils/cart';
@@ -12,6 +13,7 @@ interface CartItemWithLocal extends CartItem {
 }
 
 const CartPage: NextPage = () => {
+  const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItemWithLocal[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { showMessage } = useMessage();
@@ -59,10 +61,7 @@ const CartPage: NextPage = () => {
       clearCart();
       setCartItems([]);
       showMessage('success', 'Order placed successfully!');
-      // Redirect to dashboard or orders page after 2 seconds
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 2000);
+      // Stay on cart page after checkout
     } catch (err) {
       console.error('Checkout failed:', err);
     } finally {

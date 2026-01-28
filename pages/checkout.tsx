@@ -44,17 +44,15 @@ const CheckoutPage: NextPage = () => {
 
       // Create order
       const order = await checkout(orderItems);
+      console.log('Order created successfully:', order);
 
       // Clear cart after successful checkout
       clearCart();
+      console.log('Cart cleared');
 
-      // Show success and redirect
-      showMessage('success', `Order #${order?.id} placed successfully!`);
-      
-      // Redirect to dashboard after 2 seconds
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
+      // Redirect to cart page (replace instead of push to avoid history issues)
+      console.log('Redirecting to cart page...');
+      router.replace('/cart').catch((err) => console.error('Redirect failed:', err));
     } catch (error) {
       console.error('Checkout error:', error);
       showMessage('error', 'Failed to place order. Please try again.');

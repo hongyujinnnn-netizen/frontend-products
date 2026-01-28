@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ProductCard from '../../components/ProductCard';
 import type { Product } from '../../types/product';
 import { listProducts } from '../../services/products';
+import { useAuth } from '../../context/AuthContext';
 
 const fallbackFeatured: Product[] = [
   {
@@ -50,6 +51,7 @@ const fallbackFeatured: Product[] = [
 ];
 
 const FeaturedProductsPage: NextPage = () => {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>(fallbackFeatured);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,9 +124,11 @@ const FeaturedProductsPage: NextPage = () => {
           <div className="empty-state">
             <h2>No featured products yet</h2>
             <p>Promote items from the admin console to highlight them here.</p>
-            <Link className="button button-primary" href="/admin">
-              Open admin
-            </Link>
+            {user?.role === 'admin' && (
+              <Link className="button button-primary" href="/admin">
+                Open admin
+              </Link>
+            )}
           </div>
         ) : (
           <>

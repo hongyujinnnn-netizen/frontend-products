@@ -3,14 +3,17 @@ import '../styles/globals.css';
 import '../styles/layout.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { AuthProvider } from '../context/AuthContext';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <div className="page-wrapper">
-      <Navbar />
-      <Component {...pageProps} />
-      <Footer />
-    </div>
+    <AuthProvider>
+      <div className="page-wrapper">
+        <Navbar />
+        <Component {...pageProps} />
+        <Footer />
+      </div>
+    </AuthProvider>
   );
 }
 

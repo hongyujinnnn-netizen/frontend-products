@@ -4,6 +4,7 @@ import Link from 'next/link';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useOrders } from '../hooks/useOrders';
 import { listProducts } from '../services/products';
+import { getErrorMessage } from '../services/apiError';
 import type { Order } from '../types/order';
 import type { Product } from '../types/product';
 
@@ -11,6 +12,7 @@ const DashboardPage: NextPage = () => {
   const { orders, isLoading: ordersLoading } = useOrders();
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
+  const [productsError, setProductsError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     ordersToday: 0,
     totalRevenue: 0,
@@ -24,13 +26,18 @@ const DashboardPage: NextPage = () => {
 
     const loadProducts = async () => {
       setProductsLoading(true);
+      setProductsError(null);
       try {
         const data = await listProducts();
         if (isMounted) {
           setProducts(data);
         }
       } catch (error) {
-        console.error('Failed to load products:', error);
+        if (isMounted) {
+          const errorMsg = getErrorMessage(error);
+          setProductsError(errorMsg);
+          console.error('Failed to load products:', error);
+        }
       } finally {
         if (isMounted) {
           setProductsLoading(false);
@@ -84,6 +91,20 @@ const DashboardPage: NextPage = () => {
   return (
     <ProtectedRoute>
       <main className="layout">
+        {/* Error messages */}
+        {productsError && (
+          <div className="form-error-box" role="alert" style={{ marginBottom: '2rem' }}>
+            <svg className="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <div>
+              <strong>Failed to load products:</strong> {productsError}
+            </div>
+          </div>
+        )}
+
         <div className="section-title">
           <div>
             <h1 className="page-title">Merchant dashboard</h1>
