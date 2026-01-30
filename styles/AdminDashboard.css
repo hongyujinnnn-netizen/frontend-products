@@ -566,6 +566,10 @@ body {
   font-size: 0.875rem;
   color: var(--gray-500);
   line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .product-price {
