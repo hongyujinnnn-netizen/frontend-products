@@ -8,6 +8,11 @@ import { apiFetch } from './api';
 export const listOrders = () => apiFetch<Order[]>('/orders');
 
 /**
+ * Get all orders (admin scope)
+ */
+export const listAllOrders = () => apiFetch<Order[]>('/orders/all');
+
+/**
  * Get a specific order by ID
  */
 export const getOrder = (id: number) => apiFetch<Order>(`/orders/${id}`);
@@ -26,3 +31,9 @@ export const createOrder = (payload: OrderRequest) =>
  */
 export const getRecentOrders = (limit = 5) =>
   apiFetch<Order[]>(`/orders?limit=${limit}`);
+
+/**
+ * Get recent orders across all users (admin scope)
+ */
+export const getRecentOrdersAll = (limit = 5) =>
+  apiFetch<Order[]>(`/orders/all?limit=${limit}`);

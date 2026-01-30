@@ -1,44 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { NextPage } from 'next';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import ProductCard from '../components/ProductCard';
 import { Seo } from '../components/Seo';
-import type { Product } from '../types/product';
-import { apiFetch } from '../services/api';
-import { config } from '../lib/config';
 import { getDefaultMetadata } from '../lib/seoMetadata';
-
-const trustLogos = ['Northwind', 'Lumen', 'Arcade', 'Fieldnote', 'Brightside'];
-
-const featureHighlights = [
-  {
-    icon: '🎨',
-    title: 'Beautiful design',
-    description: 'Stunning product displays',
-  },
-  {
-    icon: '⚡',
-    title: 'Lightning fast',
-    description: 'Optimized performance',
-  },
-  {
-    icon: '📦',
-    title: 'Real inventory',
-    description: 'Live stock tracking',
-  },
-  {
-    icon: '🔒',
-    title: 'Secure payments',
-    description: 'Protected checkout',
-  },
-];
-
-const performanceSignals = [
-  { stat: '10K+', label: 'Happy customers' },
-  { stat: '99.9%', label: 'Uptime guarantee' },
-  { stat: '24/7', label: 'Customer support' },
-];
+import { useProducts } from '../hooks/useProducts';
 
 const curatedCollections = [
   {
@@ -77,48 +44,17 @@ const testimonials = [
 ];
 
 const HomePage: NextPage = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { products, loading, error, loadProducts } = useProducts();
   const router = useRouter();
 
   useEffect(() => {
-    let isMounted = true;
-
-    const loadProducts = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const data = await apiFetch<Product[]>('/products');
-        if (isMounted && Array.isArray(data) && data.length > 0) {
-          setProducts(data);
-        } else if (isMounted) {
-          setError('No products available at the moment.');
-        }
-      } catch (_err) {
-        if (isMounted) {
-          setError('Unable to load products. Please try again later.');
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
     loadProducts();
+  }, [loadProducts]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    const term = typeof router.query.search === 'string' ? router.query.search : '';
-    setSearchTerm(term);
-  }, [router.query.search]);
+  const searchTerm = useMemo(
+    () => (typeof router.query.search === 'string' ? router.query.search : ''),
+    [router.query.search]
+  );
 
   const displayedProducts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -135,6 +71,7 @@ const HomePage: NextPage = () => {
 
   const hasActiveSearch = searchTerm.trim().length > 0;
   const metadata = getDefaultMetadata();
+  const isEmpty = !loading && !error && displayedProducts.length === 0;
 
   return (
     <>
@@ -188,19 +125,19 @@ const HomePage: NextPage = () => {
               Try again
             </Link>
           </div>
-        ) : isLoading ? (
+        ) : loading ? (
           <div className="empty-state">
             <h2>Loading products</h2>
             <p>Fetching the latest items...</p>
           </div>
-        ) : displayedProducts.length === 0 ? (
+        ) : isEmpty ? (
           <div className="empty-state">
             <h2>No products found</h2>
             <p>Check back soon for amazing items</p>
           </div>
         ) : (
           <section className="product-grid">
-            {displayedProducts.slice(0, 3).map((product) => (
+            {displayedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </section>

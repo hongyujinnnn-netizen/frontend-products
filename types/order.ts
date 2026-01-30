@@ -15,4 +15,11 @@ export interface Order {
   createdAt: string;
   items: OrderItem[];
   user?: User;
+  status?: 'PENDING' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
+  customerName?: string;
+  customerEmail?: string;
+  username?: string;
+  user_email?: string;
+  userEmail?: string;
+  useremail?: string;
 }

@@ -2,7 +2,8 @@ import { getAuthToken } from '../utils/auth';
 import { parseApiError } from './apiError';
 import { clearAuthToken } from '../utils/auth';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api';
+// Default to the backend base if env is not set to avoid 404s against Next.js API routes
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080/api';
 
 class ApiError extends Error {
   status: number;

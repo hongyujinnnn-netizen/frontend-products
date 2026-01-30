@@ -1,39 +1,57 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import useSWR from 'swr';
 import type { Order } from '../types/order';
 import type { OrderRequest } from '../types/api';
-import { listOrders, createOrder, getRecentOrders } from '../services/orders';
+import { listOrders, listAllOrders, createOrder, getRecentOrders, getRecentOrdersAll } from '../services/orders';
 import { getErrorMessage } from '../services/apiError';
 import { useMessage } from './useMessage';
 
 export function useOrders() {
   const { showMessage } = useMessage();
   const [isLoading, setIsLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState<string | null>(null);
 
   // Fetch all orders with error handling
-  const { data: orders = [], error, mutate } = useSWR<Order[]>(
-    '/orders',
+  const {
+    data: ordersData,
+    error,
+    mutate,
+    isLoading: isOrdersLoading,
+  } = useSWR<Order[]>(
+    '/orders/all',
     async () => {
       try {
-        return await listOrders();
+        return await listAllOrders();
       } catch (err) {
-        // Silently fail if orders endpoint doesn't exist yet
-        console.warn('Orders endpoint not available:', err);
-        return [];
+        console.warn('Admin orders endpoint not available, falling back to user orders:', err);
+        try {
+          return await listOrders();
+        } catch (fallbackErr) {
+          const message = getErrorMessage(fallbackErr);
+          setOrdersError(message);
+          console.warn('Orders endpoint not available:', fallbackErr);
+          return [];
+        }
       }
     }
   );
 
+  const orders = ordersData ?? [];
+
   // Fetch recent orders with error handling
   const { data: recentOrders = [] } = useSWR<Order[]>(
-    '/orders/recent',
+    '/orders/all/recent',
     async () => {
       try {
-        return await getRecentOrders(5);
+        return await getRecentOrdersAll(5);
       } catch (err) {
-        // Silently fail if endpoint doesn't exist yet
-        console.warn('Recent orders endpoint not available:', err);
-        return [];
+        console.warn('Admin recent orders endpoint not available, falling back to user recent orders:', err);
+        try {
+          return await getRecentOrders(5);
+        } catch (fallbackErr) {
+          console.warn('Recent orders endpoint not available:', fallbackErr);
+          return [];
+        }
       }
     }
   );
@@ -50,10 +68,12 @@ export function useOrders() {
         const order = await createOrder({ items });
         showMessage('success', `Order #${order.id} created successfully!`);
         await mutate(); // Refresh orders list
+        setOrdersError(null);
         return order;
       } catch (err) {
         const message = getErrorMessage(err);
         showMessage('error', message);
+        setOrdersError(message);
         throw err;
       } finally {
         setIsLoading(false);
@@ -65,8 +85,8 @@ export function useOrders() {
   return {
     orders,
     recentOrders,
-    isLoading: isLoading || !orders,
-    error,
+    isLoading: isLoading || isOrdersLoading,
+    error: error ?? ordersError,
     checkout,
     mutate,
   };
