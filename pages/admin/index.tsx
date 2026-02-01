@@ -26,6 +26,8 @@ const orderStatusColor: Record<string, string> = {
   CANCELLED: 'status-danger',
 };
 
+const getOrderStatus = (order: Order) => (order as { status?: string }).status ?? 'PENDING';
+
 // Prefer provided username/customer name, then user.username/email (cover snake_case & camelCase variants)
 const getOrderCustomerLabel = (order: Order) =>
   order.username ??
@@ -48,7 +50,7 @@ const getOrderCustomerEmail = (order: Order) =>
   '';
 
 const PRODUCTS_PER_PAGE = 8;
-const ORDERS_PER_PAGE = 7;
+const ORDERS_PER_PAGE = 5;
 const CUSTOMERS_PER_PAGE = 8;
 
 const AdminPage: NextPage = () => {
@@ -72,6 +74,9 @@ const AdminPage: NextPage = () => {
   const [productPage, setProductPage] = useState(1);
   const [orderPage, setOrderPage] = useState(1);
   const [customerPage, setCustomerPage] = useState(1);
+  const [hasAnnouncedOrders, setHasAnnouncedOrders] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [dismissedOrdersNotice, setDismissedOrdersNotice] = useState(false);
 
   const {
     register,
@@ -83,11 +88,15 @@ const AdminPage: NextPage = () => {
     defaultValues: {
       name: '',
       description: '',
+      categories: '',
       price: '',
       stock: '',
       imageUrl: '',
     },
   });
+
+  const pendingOrdersCount = useMemo(() => orders.filter((order) => getOrderStatus(order) === 'PENDING').length, [orders]);
+  const hasOrders = orders.length > 0;
 
   useEffect(() => {
     void loadProducts();
@@ -106,10 +115,42 @@ const AdminPage: NextPage = () => {
     setCustomerPage(1);
   }, [userSearch, users.length]);
 
+  useEffect(() => {
+    if (!hasOrders) {
+      setHasAnnouncedOrders(false);
+      setDismissedOrdersNotice(false);
+    }
+  }, [hasOrders]);
+
+  useEffect(() => {
+    if (!hasOrders || hasAnnouncedOrders || ordersLoading) return;
+    const label = pendingOrdersCount
+      ? `${pendingOrdersCount} pending order${pendingOrdersCount === 1 ? '' : 's'}`
+      : `${orders.length} order${orders.length === 1 ? '' : 's'}`;
+    showMessage('info', `You have ${label} to review.`);
+    setHasAnnouncedOrders(true);
+  }, [hasOrders, hasAnnouncedOrders, ordersLoading, pendingOrdersCount, orders.length, showMessage]);
+
+  const notifications = useMemo(() => {
+    const list: { id: string; title: string; detail?: string }[] = [];
+    if (hasOrders && !dismissedOrdersNotice) {
+      const label = pendingOrdersCount
+        ? `${pendingOrdersCount} pending order${pendingOrdersCount === 1 ? '' : 's'}`
+        : `${orders.length} order${orders.length === 1 ? '' : 's'}`;
+      list.push({ id: 'orders', title: 'Orders to review', detail: label });
+    }
+    return list;
+  }, [hasOrders, dismissedOrdersNotice, pendingOrdersCount, orders.length]);
+
+  const hasNotification = notifications.length > 0;
+  const ordersBadgeCount = !dismissedOrdersNotice ? (pendingOrdersCount || orders.length) : 0;
+
   const filteredProducts = useMemo(() => {
     const term = productSearch.trim().toLowerCase();
     return products.filter((product) => {
-      const matchesSearch = term ? `${product.name} ${product.description ?? ''}`.toLowerCase().includes(term) : true;
+      const matchesSearch = term
+        ? `${product.name} ${product.description ?? ''} ${product.categories ?? ''}`.toLowerCase().includes(term)
+        : true;
       const isLow = product.stock <= 5;
       const matchesStock =
         productStockFilter === 'ALL' ? true : productStockFilter === 'LOW' ? isLow : !isLow;
@@ -128,7 +169,7 @@ const AdminPage: NextPage = () => {
       const customerLabel = getOrderCustomerLabel(order).toLowerCase();
       const customerEmail = getOrderCustomerEmail(order).toLowerCase();
       const matchesSearch = term ? `${order.id} ${customerLabel} ${customerEmail}`.includes(term) : true;
-      const status = (order as { status?: string }).status ?? 'PENDING';
+      const status = getOrderStatus(order);
       const matchesStatus = orderFilter === 'ALL' ? true : status === orderFilter;
       return matchesSearch && matchesStatus;
     });
@@ -184,6 +225,7 @@ const AdminPage: NextPage = () => {
     reset({
       name: match.name,
       description: match.description ?? '',
+      categories: match.categories ?? '',
       price: match.price.toString(),
       stock: match.stock.toString(),
       imageUrl: match.imageUrl ?? '',
@@ -192,7 +234,7 @@ const AdminPage: NextPage = () => {
 
   const handleProductFormReset = () => {
     setSelectedProductId(null);
-    reset({ name: '', description: '', price: '', stock: '', imageUrl: '' });
+    reset({ name: '', description: '', categories: '', price: '', stock: '', imageUrl: '' });
   };
 
   const handleNavClick = (target: string) => {
@@ -206,6 +248,7 @@ const AdminPage: NextPage = () => {
         await updateExistingProduct(selectedProductId, {
           name: data.name,
           description: data.description || null,
+          categories: data.categories,
           price: Number(data.price),
           stock: Number(data.stock),
           imageUrl: data.imageUrl || null,
@@ -215,6 +258,7 @@ const AdminPage: NextPage = () => {
         await createNewProduct({
           name: data.name,
           description: data.description || null,
+          categories: data.categories,
           price: Number(data.price),
           stock: Number(data.stock),
           imageUrl: data.imageUrl || null,
@@ -315,9 +359,47 @@ const AdminPage: NextPage = () => {
               </button>
             </div>
             <div className="admin-topbar-actions">
-              <span className="badge-dot" aria-label="Notifications">
+              <button
+                type="button"
+                className={`badge-dot ${hasNotification ? 'has-alert' : ''}`}
+                aria-label={hasNotification ? `Notifications: ${notifications.length}` : 'No notifications'}
+                onClick={() => setNotificationOpen((open) => !open)}
+              >
                 🔔
-              </span>
+                {ordersBadgeCount > 0 && <span className="notification-count">{ordersBadgeCount}</span>}
+              </button>
+              {notificationOpen && (
+                <div className="notification-panel" role="dialog" aria-label="Notifications">
+                  <div className="notification-header">
+                    <span>Notifications</span>
+                    {notifications.length > 0 && (
+                      <button
+                        className="button button-ghost"
+                        type="button"
+                        onClick={() => {
+                          setDismissedOrdersNotice(true);
+                          setHasAnnouncedOrders(true);
+                          setNotificationOpen(false);
+                        }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  {notifications.length === 0 ? (
+                    <div className="notification-empty">No notifications</div>
+                  ) : (
+                    <ul className="notification-list">
+                      {notifications.map((note) => (
+                        <li key={note.id} className="notification-item">
+                          <div className="notification-title">{note.title}</div>
+                          {note.detail && <div className="notification-detail">{note.detail}</div>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
               <div className="admin-profile">
                 <div className="avatar">A</div>
                 <div>
@@ -436,7 +518,7 @@ const AdminPage: NextPage = () => {
                           </thead>
                           <tbody>
                             {pagedOrders.map((order) => {
-                              const status = (order as { status?: string }).status ?? 'PENDING';
+                              const status = getOrderStatus(order);
                               const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
@@ -567,6 +649,7 @@ const AdminPage: NextPage = () => {
                       <thead>
                         <tr>
                           <th>Product</th>
+                          <th>Categories</th>
                           <th>Price</th>
                           <th>Stock</th>
                           <th style={{ width: '200px' }}>Action</th>
@@ -593,6 +676,7 @@ const AdminPage: NextPage = () => {
                                   </div>
                                 </div>
                               </td>
+                              <td className="cell-sub">{product.categories || 'Uncategorized'}</td>
                               <td className="product-price">${product.price.toFixed(2)}</td>
                               <td className="cell-sub">
                                 <span className={`pill ${product.stock <= 5 ? 'status-danger' : 'status-success'}`}>
@@ -672,6 +756,12 @@ const AdminPage: NextPage = () => {
                     Name
                     <input className="form-input" placeholder="Product name" {...register('name')} />
                     {errors.name && <span className="form-error">{errors.name.message}</span>}
+                  </label>
+
+                  <label className="form-label">
+                    Categories
+                    <input className="form-input" placeholder="e.g. Electronics, Gadgets" {...register('categories')} />
+                    {errors.categories && <span className="form-error">{errors.categories.message}</span>}
                   </label>
 
                   <label className="form-label">
@@ -766,7 +856,7 @@ const AdminPage: NextPage = () => {
                       </thead>
                       <tbody>
                         {pagedOrders.map((order) => {
-                          const status = (order as { status?: string }).status ?? 'PENDING';
+                          const status = getOrderStatus(order);
                           const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',

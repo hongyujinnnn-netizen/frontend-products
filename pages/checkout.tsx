@@ -28,12 +28,17 @@ const CheckoutPage: NextPage = () => {
 
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
+      // ...existing code...
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
       showMessage('error', 'Cart is empty');
       return;
     }
-
+    const outOfStockItem = cartItems.find((item) => item.quantity > item.product.stock);
+    if (outOfStockItem) {
+      showMessage('error', `Only ${outOfStockItem.product.stock} left for ${outOfStockItem.product.name}`);
+      return;
+    }
     setIsProcessing(true);
     try {
       // Transform cart items to order request format
@@ -41,17 +46,9 @@ const CheckoutPage: NextPage = () => {
         productId: item.product.id,
         quantity: item.quantity,
       }));
-
       // Create order
       const order = await checkout(orderItems);
-      console.log('Order created successfully:', order);
-
-      // Clear cart after successful checkout
       clearCart();
-      console.log('Cart cleared');
-
-      // Redirect to cart page (replace instead of push to avoid history issues)
-      console.log('Redirecting to cart page...');
       router.replace('/cart').catch((err) => console.error('Redirect failed:', err));
     } catch (error) {
       console.error('Checkout error:', error);

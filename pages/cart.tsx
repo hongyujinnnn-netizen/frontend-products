@@ -32,14 +32,20 @@ const CartPage: NextPage = () => {
   };
 
   const handleUpdateQuantity = (productId: number, quantity: number) => {
-    if (quantity < 1) {
+    const item = cartItems.find((i) => i.product.id === productId);
+    if (!item) return;
+    const maxQuantity = item.product.stock;
+    const safeQuantity = Math.min(quantity, maxQuantity);
+    if (safeQuantity < 1) {
       handleRemove(productId);
       return;
     }
-
+    if (quantity > maxQuantity) {
+      showMessage('error', `Only ${maxQuantity} in stock for ${item.product.name}`);
+    }
     setCartItems((prev) =>
       prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
+        item.product.id === productId ? { ...item, quantity: safeQuantity } : item
       )
     );
   };
@@ -49,14 +55,17 @@ const CartPage: NextPage = () => {
       showMessage('error', 'Cart is empty');
       return;
     }
-
+    const outOfStockItem = cartItems.find((item) => item.quantity > item.product.stock);
+    if (outOfStockItem) {
+      showMessage('error', `Only ${outOfStockItem.product.stock} left for ${outOfStockItem.product.name}`);
+      return;
+    }
     setIsLoading(true);
     try {
       const orderItems = cartItems.map((item) => ({
         productId: item.product.id,
         quantity: item.quantity,
       }));
-
       await checkout(orderItems);
       clearCart();
       setCartItems([]);

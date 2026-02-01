@@ -7,6 +7,7 @@ export interface SaveProductPayload {
   price: number;
   stock: number;
   imageUrl?: string | null;
+  categories: string;
 }
 
 export const listProducts = () => apiFetch<Product[]>('/products');

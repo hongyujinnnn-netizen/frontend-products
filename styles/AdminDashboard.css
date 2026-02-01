@@ -286,6 +286,8 @@ body {
   padding: var(--space-2);
   border-radius: var(--radius-md);
   transition: background-color var(--transition-normal);
+  border: none;
+  background: transparent;
 }
 
 .badge-dot:hover {
@@ -302,6 +304,99 @@ body {
   background: var(--danger);
   border-radius: 50%;
   border: 2px solid var(--bg-primary);
+  display: none;
+}
+
+.badge-dot.has-alert {
+  background: var(--warning-light);
+  color: var(--warning-dark);
+}
+
+.badge-dot.has-alert::after {
+  display: block;
+  background: var(--warning);
+  animation: notify-pulse 1.6s ease-in-out infinite;
+}
+
+.notification-count {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  min-width: 18px;
+  padding: 2px 6px;
+  background: var(--warning);
+  color: white;
+  border-radius: 999px;
+  font-size: 0.675rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: var(--shadow-sm);
+}
+
+.notification-panel {
+  position: absolute;
+  top: 48px;
+  right: 0;
+  width: 280px;
+  background: var(--bg-primary);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-3);
+  z-index: 60;
+}
+
+.notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+}
+
+.notification-empty {
+  color: var(--gray-500);
+  font-size: 0.875rem;
+  padding: var(--space-3);
+}
+
+.notification-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.notification-item {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--gray-50);
+}
+
+.notification-title {
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+}
+
+.notification-detail {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+}
+
+@keyframes notify-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .admin-profile {
@@ -826,6 +921,12 @@ textarea.form-input {
   background: var(--danger-light);
   color: var(--danger-dark);
   border: 1px solid var(--danger);
+}
+
+.status-message-warning {
+  background: var(--warning-light);
+  color: var(--warning-dark);
+  border: 1px solid var(--warning);
 }
 
 /* ===== EMPTY STATES ===== */

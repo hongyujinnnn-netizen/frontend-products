@@ -28,10 +28,11 @@ export const addToCart = (product: Product, quantity = 1) => {
   const items = readCart();
   const existingItem = items.find((item) => item.product.id === product.id);
 
+  const maxQuantity = product.stock;
   if (existingItem) {
-    existingItem.quantity += quantity;
+    existingItem.quantity = Math.min(existingItem.quantity + quantity, maxQuantity);
   } else {
-    items.push({ product, quantity });
+    items.push({ product, quantity: Math.min(quantity, maxQuantity) });
   }
 
   writeCart(items);
@@ -47,12 +48,13 @@ export const clearCart = () => writeCart([]);
 export const updateCartQuantity = (productId: number, quantity: number) => {
   const items = readCart();
   const item = items.find((i) => i.product.id === productId);
-  
   if (item) {
-    if (quantity <= 0) {
+    const maxQuantity = item.product.stock;
+    const safeQuantity = Math.min(quantity, maxQuantity);
+    if (safeQuantity <= 0) {
       removeFromCart(productId);
     } else {
-      item.quantity = quantity;
+      item.quantity = safeQuantity;
       writeCart(items);
     }
   }
