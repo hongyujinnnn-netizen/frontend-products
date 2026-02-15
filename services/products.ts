@@ -4,6 +4,8 @@ import { apiFetch } from './api';
 export interface SaveProductPayload {
   name: string;
   description?: string | null;
+  tags?: string | null;
+  features?: string | null;
   price: number;
   stock: number;
   imageUrl?: string | null;

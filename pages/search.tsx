@@ -15,6 +15,14 @@ const SearchPage: NextPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<'RELEVANCE' | 'PRICE_ASC' | 'PRICE_DESC' | 'STOCK' | 'NEWEST'>('RELEVANCE');
+  const [page, setPage] = useState(1);
+
+  const pageSize = 12;
 
   useEffect(() => {
     if (!searchTerm) {
@@ -24,36 +32,59 @@ const SearchPage: NextPage = () => {
     }
 
     let isMounted = true;
-
-    const runSearch = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const data = await listProducts();
-        if (!isMounted) {
-          return;
-        }
-
-        setProducts(data);
-      } catch (_error) {
-        if (isMounted) {
-          setError('Unable to fetch products from the API. Showing demo results instead.');
-          setProducts([]);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+    const debounceId = window.setTimeout(() => {
+      if (!isMounted) {
+        return;
       }
-    };
 
-    void runSearch();
+      const runSearch = async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+          const data = await listProducts();
+          if (!isMounted) {
+            return;
+          }
+
+          setProducts(data);
+        } catch {
+          if (isMounted) {
+            setError('Unable to fetch products from the API. Showing demo results instead.');
+            setProducts([]);
+          }
+        } finally {
+          if (isMounted) {
+            setIsLoading(false);
+          }
+        }
+      };
+
+      void runSearch();
+    }, 250);
 
     return () => {
       isMounted = false;
+      window.clearTimeout(debounceId);
     };
   }, [searchTerm]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, categoryFilter, minPrice, maxPrice, inStockOnly, sortBy]);
+
+  const categories = useMemo(() => {
+    const values = new Set<string>();
+    products.forEach((product) => {
+      const raw = product.categories ?? '';
+      raw
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+        .forEach((entry) => values.add(entry));
+    });
+    return Array.from(values);
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm) {
@@ -61,13 +92,55 @@ const SearchPage: NextPage = () => {
     }
 
     const term = searchTerm.toLowerCase();
-    return products
+    let next = products
       .filter((product) => {
         const haystack = `${product.name} ${product.description ?? ''}`.toLowerCase();
         return haystack.includes(term);
-      })
-      .slice(0, 24);
-  }, [products, searchTerm]);
+      });
+
+    if (categoryFilter !== 'ALL') {
+      next = next.filter((product) => {
+        const raw = product.categories ?? '';
+        const tags = raw
+          .split(',')
+          .map((entry) => entry.trim().toLowerCase())
+          .filter(Boolean);
+        return tags.includes(categoryFilter.toLowerCase());
+      });
+    }
+
+    const min = minPrice ? Number(minPrice) : null;
+    const max = maxPrice ? Number(maxPrice) : null;
+    next = next.filter((product) => {
+      if (min !== null && product.price < min) {
+        return false;
+      }
+      if (max !== null && product.price > max) {
+        return false;
+      }
+      return true;
+    });
+
+    if (inStockOnly) {
+      next = next.filter((product) => product.stock > 0);
+    }
+
+    const sorted = [...next];
+    if (sortBy === 'PRICE_ASC') {
+      sorted.sort((a, b) => a.price - b.price);
+    } else if (sortBy === 'PRICE_DESC') {
+      sorted.sort((a, b) => b.price - a.price);
+    } else if (sortBy === 'STOCK') {
+      sorted.sort((a, b) => b.stock - a.stock);
+    } else if (sortBy === 'NEWEST') {
+      sorted.sort((a, b) => b.id - a.id);
+    }
+
+    return sorted;
+  }, [products, searchTerm, categoryFilter, minPrice, maxPrice, inStockOnly, sortBy]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+  const pagedProducts = filteredProducts.slice((page - 1) * pageSize, page * pageSize);
 
   const handleSuggestion = useCallback(
     (suggestion: string) => {
@@ -89,20 +162,25 @@ const SearchPage: NextPage = () => {
   return (
     <>
       <Head>
-        <title>{hasTerm ? `Search · ${searchTerm}` : 'Search products'} · ShopLite</title>
+        <title>{hasTerm ? `Search - ${searchTerm}` : 'Search products'} - ShopLite</title>
       </Head>
       <main className="layout">
         <section className="search-hero">
           <div>
             <span className="badge">Product search</span>
             <h1 className="search-title">
-              {hasTerm ? `Results for “${searchTerm}”` : 'Find products across your catalog'}
+              {hasTerm ? `Results for "${searchTerm}"` : 'Find products across your catalog'}
             </h1>
             <p className="search-subtitle">
               {hasTerm
                 ? 'Refine the query or explore highlighted keywords below to discover more products.'
                 : 'Enter a keyword in the navigation bar to surface matching catalog entries instantly.'}
             </p>
+            {hasTerm && (
+              <p className="search-subtitle">
+                {filteredProducts.length} results
+              </p>
+            )}
           </div>
           <div className="search-suggestions">
             <span>Trending:</span>
@@ -115,6 +193,72 @@ const SearchPage: NextPage = () => {
             </div>
           </div>
         </section>
+
+        {hasTerm && (
+          <section className="search-filters">
+            <div className="search-filter">
+              <label htmlFor="categoryFilter">Category</label>
+              <select
+                id="categoryFilter"
+                value={categoryFilter}
+                onChange={(event) => setCategoryFilter(event.target.value)}
+              >
+                <option value="ALL">All categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="search-filter">
+              <label htmlFor="minPrice">Min price</label>
+              <input
+                id="minPrice"
+                type="number"
+                min="0"
+                placeholder="0"
+                value={minPrice}
+                onChange={(event) => setMinPrice(event.target.value)}
+              />
+            </div>
+            <div className="search-filter">
+              <label htmlFor="maxPrice">Max price</label>
+              <input
+                id="maxPrice"
+                type="number"
+                min="0"
+                placeholder="500"
+                value={maxPrice}
+                onChange={(event) => setMaxPrice(event.target.value)}
+              />
+            </div>
+            <div className="search-filter search-filter-inline">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={inStockOnly}
+                  onChange={(event) => setInStockOnly(event.target.checked)}
+                />
+                In stock only
+              </label>
+            </div>
+            <div className="search-filter">
+              <label htmlFor="sortBy">Sort by</label>
+              <select
+                id="sortBy"
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
+              >
+                <option value="RELEVANCE">Relevance</option>
+                <option value="PRICE_ASC">Price: Low to high</option>
+                <option value="PRICE_DESC">Price: High to low</option>
+                <option value="STOCK">Stock</option>
+                <option value="NEWEST">Newest</option>
+              </select>
+            </div>
+          </section>
+        )}
 
         {!hasTerm && (
           <div className="empty-state">
@@ -134,11 +278,36 @@ const SearchPage: NextPage = () => {
         )}
 
         {hasTerm && !isLoading && hasResults && (
-          <section className="product-grid">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </section>
+          <>
+            <section className="product-grid">
+              {pagedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </section>
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  className="button button-ghost"
+                  type="button"
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                  disabled={page === 1}
+                >
+                  Previous
+                </button>
+                <span className="form-hint">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  className="button button-ghost"
+                  type="button"
+                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={page === totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {hasTerm && !isLoading && !hasResults && (

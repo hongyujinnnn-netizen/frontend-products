@@ -9,6 +9,8 @@ import { z } from 'zod';
 export const productFormSchema = z.object({
   name: z.string().min(1, 'Product name is required').max(200, 'Name must be less than 200 characters'),
   description: z.string().max(2000, 'Description must be less than 2000 characters').optional().nullable(),
+  tags: z.string().max(255, 'Tags must be less than 255 characters').optional().nullable(),
+  features: z.string().max(5000, 'Features must be less than 5000 characters').optional().nullable(),
   categories: z.string().min(1, 'Category is required').max(255, 'Category must be less than 255 characters'),
   price: z
     .string()

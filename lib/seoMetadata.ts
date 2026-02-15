@@ -47,7 +47,12 @@ export function generateTwitterTags(metadata: SeoMetadata) {
 /**
  * Generate structured data (JSON-LD)
  */
-export function generateStructuredData(type: 'Organization' | 'Product' | 'Article', data: any) {
+type StructuredData = Record<string, unknown>;
+
+export function generateStructuredData(
+  type: 'Organization' | 'Product' | 'Article',
+  data: StructuredData
+) {
   const baseData = {
     '@context': 'https://schema.org',
     '@type': type,
@@ -71,7 +76,7 @@ export function generateStructuredData(type: 'Organization' | 'Product' | 'Artic
       image: data.imageUrl,
       price: data.price,
       priceCurrency: 'USD',
-      availability: data.stock > 0 ? 'InStock' : 'OutOfStock',
+      availability: typeof data.stock === 'number' && data.stock > 0 ? 'InStock' : 'OutOfStock',
       ...data,
     };
   }
@@ -84,7 +89,7 @@ export function generateStructuredData(type: 'Organization' | 'Product' | 'Artic
       image: data.image,
       author: {
         '@type': 'Person',
-        name: data.author || config.site.name,
+        name: (data.author as string) || config.site.name,
       },
       datePublished: data.publishedDate,
       dateModified: data.modifiedDate || data.publishedDate,
@@ -98,7 +103,12 @@ export function generateStructuredData(type: 'Organization' | 'Product' | 'Artic
 /**
  * Product page metadata
  */
-export function getProductMetadata(product: any): SeoMetadata {
+export function getProductMetadata(product: {
+  id: number;
+  name: string;
+  description?: string | null;
+  imageUrl?: string | null;
+}): SeoMetadata {
   return {
     title: `${product.name} | ${config.site.name}`,
     description: product.description || `Buy ${product.name} at ${config.site.name}`,

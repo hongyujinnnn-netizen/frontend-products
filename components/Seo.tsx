@@ -3,7 +3,7 @@ import { SeoMetadata, generateOgTags, generateTwitterTags, generateStructuredDat
 
 interface SeoProps {
   metadata: SeoMetadata;
-  structuredData?: any;
+  structuredData?: Record<string, unknown>;
   structuredDataType?: 'Organization' | 'Product' | 'Article';
 }
 

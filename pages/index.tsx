@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { NextPage } from 'next';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -46,6 +46,8 @@ const testimonials = [
 const HomePage: NextPage = () => {
   const { products, loading, error, loadProducts } = useProducts();
   const router = useRouter();
+  const [page, setPage] = useState(1);
+  const pageSize = 6;
 
   useEffect(() => {
     loadProducts();
@@ -56,11 +58,11 @@ const HomePage: NextPage = () => {
     [router.query.search]
   );
 
-  const displayedProducts = useMemo(() => {
+  const filteredProducts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
     if (!term) {
-      return products.slice(0, 6);
+      return products;
     }
 
     return products.filter((product) => {
@@ -69,16 +71,21 @@ const HomePage: NextPage = () => {
     });
   }, [products, searchTerm]);
 
-  const hasActiveSearch = searchTerm.trim().length > 0;
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, products.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+  const displayedProducts = filteredProducts.slice((page - 1) * pageSize, page * pageSize);
   const metadata = getDefaultMetadata();
-  const isEmpty = !loading && !error && displayedProducts.length === 0;
+  const isEmpty = !loading && !error && filteredProducts.length === 0;
 
   return (
     <>
       <Seo metadata={metadata} />
       <main className="layout">
         <section className="hero">
-          <span className="badge">🎉 Welcome to ShopLite</span>
+          <span className="badge">Welcome to ShopLite</span>
           <h1 className="hero-title">Premium shopping experience</h1>
           <p className="hero-lede">
             Discover quality products with fast shipping and exceptional service
@@ -98,7 +105,7 @@ const HomePage: NextPage = () => {
               <h3>{collection.title}</h3>
               <p>{collection.description}</p>
               <Link className="button button-ghost" href="/product/featured">
-                Explore →
+                Explore
               </Link>
             </article>
           ))}
@@ -119,7 +126,7 @@ const HomePage: NextPage = () => {
 
         {error ? (
           <div className="empty-state" role="alert">
-            <h2>⚠️ {error.includes('No products') ? 'No products available' : 'Error loading products'}</h2>
+            <h2>{error.includes('No products') ? 'No products available' : 'Error loading products'}</h2>
             <p>{error}</p>
             <Link className="button button-primary" href="/">
               Try again
@@ -136,17 +143,42 @@ const HomePage: NextPage = () => {
             <p>Check back soon for amazing items</p>
           </div>
         ) : (
-          <section className="product-grid">
-            {displayedProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </section>
+          <>
+            <section className="product-grid">
+              {displayedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </section>
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  className="button button-ghost"
+                  type="button"
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                  disabled={page === 1}
+                >
+                  Previous
+                </button>
+                <span className="form-hint">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  className="button button-ghost"
+                  type="button"
+                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={page === totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         <section className="testimonial-section section-spaced">
           <div className="section-title">
             <div>
-              <h2>⭐ Loved by our customers</h2>
+            <h2>Loved by our customers</h2>
               <p className="section-subtitle">See what real shoppers think</p>
             </div>
           </div>
@@ -154,7 +186,7 @@ const HomePage: NextPage = () => {
             {testimonials.map((testimonial) => (
               <figure className="testimonial-card" key={testimonial.author}>
                 <div className="testimonial-rating">
-                  {'⭐'.repeat(testimonial.rating)}
+                  Rating: {testimonial.rating}/5
                 </div>
                 <blockquote className="testimonial-quote">{testimonial.quote}</blockquote>
                 <figcaption className="testimonial-author">

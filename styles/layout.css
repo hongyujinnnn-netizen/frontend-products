@@ -33,7 +33,7 @@
 
 .admin-sidebar {
   border-right: 1px solid var(--color-border, #e5e7eb);
-  background: #0f172a;
+  background: var(--color-bg, #0f172a);
   color: #f8fafc;
   display: flex;
   flex-direction: column;
@@ -59,7 +59,7 @@
   display: grid;
   place-items: center;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-text, #1f2937);
   font-size: 0.95rem;
 }
 
@@ -82,12 +82,12 @@
 
 .product-title {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text, #0f172a);
   font-size: 0.98rem;
 }
 
 .product-description {
-  color: #6b7280;
+  color: var(--color-text-muted, #6b7280);
   font-size: 0.85rem;
 }
 
@@ -120,7 +120,7 @@
 
 .brand-sub {
   font-size: 12px;
-  color: #cbd5e1;
+  color: var(--color-text-muted, #cbd5e1);
 }
 
 .admin-nav {
@@ -146,7 +146,7 @@
 .admin-nav-item.is-active {
   background: rgba(59, 130, 246, 0.12);
   border-color: rgba(59, 130, 246, 0.35);
-  color: #ffffff;
+  color: var(--color-text, #ffffff);
 }
 
 .admin-nav-item:hover {
@@ -200,7 +200,7 @@
   justify-content: space-between;
   padding: 1rem 1.5rem;
   backdrop-filter: blur(8px);
-  background: rgba(255, 255, 255, 0.75);
+  background: var(--color-surface, rgba(255, 255, 255, 0.9));
   border-bottom: 1px solid var(--color-border, #e5e7eb);
 }
 
@@ -216,7 +216,7 @@
   padding: 0.65rem 0.85rem;
   border-radius: var(--radius-sm, 8px);
   border: 1px solid var(--color-border, #e5e7eb);
-  background: #fff;
+  background: var(--color-surface, #fff);
 }
 
 .admin-topbar-actions {
@@ -233,7 +233,7 @@
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  background: #f3f4f6;
+  background: var(--color-surface, #f3f4f6);
   border: 1px solid #e5e7eb;
 }
 
@@ -286,7 +286,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  background: #fff;
+  background: var(--color-surface, #fff);
   border: 1px solid var(--color-border, #e5e7eb);
   border-radius: var(--radius-md, 12px);
   padding: 1.25rem 1.5rem;
@@ -305,7 +305,7 @@
 }
 
 .admin-card {
-  background: #fff;
+  background: var(--color-surface, #fff);
   border: 1px solid var(--color-border, #e5e7eb);
   border-radius: var(--radius-md, 12px);
   padding: 1rem 1.1rem;
@@ -314,7 +314,7 @@
 
 .card-label {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--color-text-muted, #6b7280);
 }
 
 .card-value {
@@ -325,7 +325,7 @@
 
 .card-foot {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-muted, #6b7280);
   margin-top: 6px;
 }
 
@@ -336,7 +336,7 @@
 }
 
 .panel {
-  background: #fff;
+  background: var(--color-surface, #fff);
   border: 1px solid var(--color-border, #e5e7eb);
   border-radius: var(--radius-md, 12px);
   padding: 1.1rem 1.25rem;
@@ -349,6 +349,19 @@
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
+}
+
+.bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.bulk-stock {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .toolbar.compact {
@@ -365,7 +378,7 @@
   padding: 1rem;
   border: 1px dashed var(--color-border, #e5e7eb);
   border-radius: var(--radius-md, 12px);
-  background: #f8fafc;
+  background: var(--color-surface, #f8fafc);
 }
 
 .table-pagination {
@@ -374,6 +387,87 @@
   justify-content: flex-end;
   gap: 0.5rem;
   padding: 0.75rem 0 0;
+}
+
+.table-actions-col {
+  width: 200px;
+}
+
+.table-check {
+  width: 44px;
+}
+
+.row-selected {
+  background: rgba(0, 113, 227, 0.06);
+}
+
+.order-table tbody tr {
+  cursor: pointer;
+}
+
+.order-detail {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  display: grid;
+  gap: 1rem;
+}
+
+.order-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.order-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.order-items {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.revenue-chart {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+}
+
+.revenue-row {
+  display: grid;
+  grid-template-columns: 70px 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.revenue-bar {
+  height: 6px;
+  background: #eef1f5;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.revenue-bar span {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 999px;
+}
+
+.top-products h4 {
+  margin: 0 0 0.75rem;
 }
 
 .status-warning { background: #fef9c3; color: #92400e; }

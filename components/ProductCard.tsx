@@ -11,7 +11,16 @@ interface ProductCardProps {
   product: Product;
 }
 
-const buildFlagLabel = (stock: number) => {
+const getTagTone = (tag: string): 'new' | 'top' | 'edition' | 'discount' | 'default' => {
+  const normalized = tag.trim().toLowerCase();
+  if (normalized.includes('new')) return 'new';
+  if (normalized.includes('top')) return 'top';
+  if (normalized.includes('edition')) return 'edition';
+  if (normalized.includes('discount') || normalized.includes('sale')) return 'discount';
+  return 'default';
+};
+
+const buildFlagLabel = (stock: number, tags: string[]) => {
   if (stock <= 0) {
     return 'Out of stock';
   }
@@ -20,20 +29,30 @@ const buildFlagLabel = (stock: number) => {
     return 'Low stock';
   }
 
-  return 'Featured';
+  if (tags.length > 0) {
+    return `${tags[0]}`;
+  }
+
+  return 'FEATURED';
 };
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const { showMessage } = useMessage();
+  const tagTokens = (product.tags ?? '')
+    .split(',')
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+  const primaryTagTone = getTagTone(tagTokens[0] ?? '');
   
-  const flagLabel = buildFlagLabel(product.stock ?? 0);
+  const flagLabel = buildFlagLabel(product.stock ?? 0, tagTokens);
   const flagClass =
     product.stock <= 0
       ? 'product-card-flag-empty'
       : product.stock < 4
         ? 'product-card-flag-low'
-        : 'product-card-flag-featured';
+        : `product-card-flag-featured product-card-flag-tag-${primaryTagTone}`;
 
   const imageUrl = product.imageUrl ?? 'https://via.placeholder.com/480x320?text=Product';
   
@@ -47,8 +66,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
     setIsAdding(true);
     try {
       addToCart(product, 1);
-      showMessage('success', `✓ ${product.name} added to cart! (${product.price})`);
-    } catch (error) {
+      showMessage('success', `${product.name} added to cart (${product.price})`);
+    } catch {
       showMessage('error', 'Failed to add item to cart');
     } finally {
       setIsAdding(false);
@@ -73,6 +92,15 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <p className="product-card-description">
           {product.description ?? 'Product description coming soon. Connect your API payload for richer copy.'}
         </p>
+        {tagTokens.length > 0 && (
+          <div className="product-preview-categories">
+            {tagTokens.map((tag) => (
+              <span key={tag} className={`preview-category-chip product-tag-chip product-tag-${getTagTone(tag)}`}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="product-card-meta">
         <span className="product-card-price">${product.price.toFixed(2)}</span>

@@ -4,8 +4,8 @@ import { useRouter } from 'next/router';
 import { useState } from 'react';
 import Link from 'next/link';
 import Head from 'next/head';
-import { signUp } from '../services/auth';
 import { z } from 'zod';
+import { useAuth } from '../context/AuthContext';
 
 // Validation schema for register form
 const registerSchema = z.object({
@@ -30,6 +30,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 const RegisterPage: NextPage = () => {
   const router = useRouter();
+  const { signUp } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -50,7 +51,7 @@ const RegisterPage: NextPage = () => {
         const fieldErrors: Partial<RegisterFormData> = {};
         err.issues.forEach((issue) => {
           if (issue.path[0]) {
-            fieldErrors[issue.path[0] as keyof RegisterFormData] = issue.message as any;
+            fieldErrors[issue.path[0] as keyof RegisterFormData] = issue.message;
           }
         });
         setErrors(fieldErrors);
@@ -78,12 +79,8 @@ const RegisterPage: NextPage = () => {
     setIsSubmitting(true);
 
     try {
-      await signUp({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-      });
-      router.push('/');
+      await signUp(formData.username, formData.email, formData.password);
+      void router.push('/', undefined, { scroll: true });
     } catch (err) {
       // Handle specific error types
       if (err instanceof Error) {
@@ -104,7 +101,7 @@ const RegisterPage: NextPage = () => {
   return (
     <>
       <Head>
-        <title>ShopLite · Create Account</title>
+        <title>ShopLite - Create Account</title>
         <meta name="description" content="Create a new ShopLite account to start selling online." />
       </Head>
       <main className="layout">
@@ -228,7 +225,7 @@ const RegisterPage: NextPage = () => {
                 </button>
               </div>
               <p className="form-hint" style={{ marginTop: '0.3rem' }}>
-                ✓ At least 8 characters, 1 uppercase letter, 1 number
+                At least 8 characters, 1 uppercase letter, 1 number
               </p>
             </div>
 
@@ -241,7 +238,7 @@ const RegisterPage: NextPage = () => {
               {isSubmitting ? (
                 <>
                   <span className="spinner"></span>
-                  Creating account…
+                  Creating account...
                 </>
               ) : (
                 'Create Account'

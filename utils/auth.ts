@@ -24,7 +24,7 @@ const decodeJwtPayload = (token: string) => {
     const decoded = atob(padded);
 
     return JSON.parse(decoded) as Record<string, unknown>;
-  } catch (_error) {
+  } catch {
     return null;
   }
 };

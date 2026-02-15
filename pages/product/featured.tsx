@@ -79,7 +79,7 @@ const FeaturedProductsPage: NextPage = () => {
         const sorted = [...data].sort((a, b) => b.stock - a.stock || b.price - a.price);
         setProducts(sorted);
         setCurrentPage(0);
-      } catch (_error) {
+      } catch {
         if (isMounted) {
           setError('Unable to reach the products API. Showing curated demo picks.');
         }
@@ -100,7 +100,7 @@ const FeaturedProductsPage: NextPage = () => {
   return (
     <>
       <Head>
-        <title>ShopLite · Featured products</title>
+        <title>ShopLite - Featured products</title>
       </Head>
       <main className="layout">
         <div className="section-title">
@@ -124,7 +124,7 @@ const FeaturedProductsPage: NextPage = () => {
           <div className="empty-state">
             <h2>No featured products yet</h2>
             <p>Promote items from the admin console to highlight them here.</p>
-            {user?.role === 'admin' && (
+            {user?.role === 'ADMIN' && (
               <Link className="button button-primary" href="/admin">
                 Open admin
               </Link>
@@ -139,15 +139,15 @@ const FeaturedProductsPage: NextPage = () => {
             </section>
 
             {totalPages > 1 && (
-              <div className="pagination" style={{ marginTop: '3rem', display: 'flex', justifyContent: 'center', gap: '1rem', alignItems: 'center' }}>
+              <div className="pagination">
                 <button
                   className="button button-ghost"
                   onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
                   disabled={currentPage === 0}
                 >
-                  ← Previous
+                  Previous
                 </button>
-                <span className="form-hint" style={{ margin: '0 1rem' }}>
+                <span className="form-hint">
                   Page {currentPage + 1} of {totalPages}
                 </span>
                 <button
@@ -155,7 +155,7 @@ const FeaturedProductsPage: NextPage = () => {
                   onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
                   disabled={currentPage === totalPages - 1}
                 >
-                  Next →
+                  Next
                 </button>
               </div>
             )}

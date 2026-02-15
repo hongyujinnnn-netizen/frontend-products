@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import useSWR from 'swr';
 import type { Product } from '../types/product';
 import { listProducts, createProduct, updateProduct, deleteProduct, type SaveProductPayload } from '../services/products';
 import { getErrorMessage } from '../services/apiError';
@@ -8,71 +9,89 @@ import { getErrorMessage } from '../services/apiError';
  * Encapsulates all product-related logic and state
  */
 export function useProducts() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isMutating, setIsMutating] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const {
+    data,
+    error: fetchError,
+    isLoading,
+    mutate,
+  } = useSWR<Product[]>('/products', async () => listProducts());
+
+  const products = useMemo(() => data ?? [], [data]);
+  const error = useMemo(() => {
+    if (fetchError) {
+      return getErrorMessage(fetchError);
+    }
+    return actionError;
+  }, [fetchError, actionError]);
 
   const loadProducts = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await listProducts();
-      setProducts(data);
-    } catch (err) {
-      const message = getErrorMessage(err);
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await mutate();
+  }, [mutate]);
 
   const createNewProduct = useCallback(
     async (payload: SaveProductPayload) => {
-      setError(null);
+      setActionError(null);
+      setIsMutating(true);
       try {
         const newProduct = await createProduct(payload);
-        setProducts((prev) => [...prev, newProduct]);
+        await mutate((current = []) => [...current, newProduct], { revalidate: false });
         return newProduct;
       } catch (err) {
         const message = getErrorMessage(err);
-        setError(message);
+        setActionError(message);
         throw err;
+      } finally {
+        setIsMutating(false);
       }
     },
-    []
+    [mutate]
   );
 
   const updateExistingProduct = useCallback(
     async (id: number, payload: SaveProductPayload) => {
-      setError(null);
+      setActionError(null);
+      setIsMutating(true);
       try {
         const updated = await updateProduct(id, payload);
-        setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
+        await mutate(
+          (current = []) => current.map((p) => (p.id === id ? updated : p)),
+          { revalidate: false }
+        );
         return updated;
       } catch (err) {
         const message = getErrorMessage(err);
-        setError(message);
+        setActionError(message);
         throw err;
+      } finally {
+        setIsMutating(false);
       }
     },
-    []
+    [mutate]
   );
 
   const deleteExistingProduct = useCallback(async (id: number) => {
-    setError(null);
+    setActionError(null);
+    setIsMutating(true);
     try {
       await deleteProduct(id);
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+      await mutate((current = []) => current.filter((p) => p.id !== id), {
+        revalidate: false,
+      });
     } catch (err) {
       const message = getErrorMessage(err);
-      setError(message);
+      setActionError(message);
       throw err;
+    } finally {
+      setIsMutating(false);
     }
-  }, []);
+  }, [mutate]);
 
   return {
     products,
-    loading,
+    loading: isLoading || isMutating,
     error,
     loadProducts,
     createNewProduct,

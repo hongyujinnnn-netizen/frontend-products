@@ -32,10 +32,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const USER_KEY = 'auth_user';
 
 interface TokenPayload {
-  userId: number;
-  email: string;
-  role: string;
-  exp: number;
+  [key: string]: unknown;
 }
 
 /**
@@ -61,7 +58,17 @@ function isTokenExpired(token: string): boolean {
   if (!payload) return true;
   
   const now = Math.floor(Date.now() / 1000);
-  return payload.exp < now;
+  const expRaw = payload.exp;
+  const exp =
+    typeof expRaw === 'number'
+      ? expRaw
+      : typeof expRaw === 'string'
+        ? Number(expRaw)
+        : Number.NaN;
+  if (!Number.isFinite(exp)) {
+    return true;
+  }
+  return exp < now;
 }
 
 /**
@@ -71,9 +78,8 @@ function getRoleFromToken(token: string): 'USER' | 'ADMIN' | null {
   try {
     const payload = decodeToken(token);
     if (!payload) return null;
-    
-    const payloadObj = payload as Record<string, any>;
-    const role = (payloadObj.role || payloadObj.roles || payloadObj.authorities) as any;
+
+    const role = payload.role || payload.roles || payload.authorities;
     
     if (Array.isArray(role) && role.length > 0) {
       const roleStr = role[0].toString().toUpperCase();
@@ -91,6 +97,39 @@ function getRoleFromToken(token: string): 'USER' | 'ADMIN' | null {
   }
 }
 
+const getIdentityFromToken = (token: string) => {
+  const payload = decodeToken(token);
+  if (!payload) {
+    return { id: 0, username: '', email: '' };
+  }
+
+  const pickString = (value: unknown) =>
+    typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+
+  const username =
+    pickString(payload.username) ||
+    pickString(payload.userName) ||
+    pickString(payload.preferred_username) ||
+    pickString(payload.sub) ||
+    pickString(payload.name) ||
+    '';
+
+  let email = pickString(payload.email) || '';
+  if (!email && username.includes('@')) {
+    email = username;
+  }
+
+  const idRaw = payload.userId ?? payload.id ?? payload.user_id ?? payload.sub;
+  const id =
+    typeof idRaw === 'number'
+      ? idRaw
+      : typeof idRaw === 'string' && /^\d+$/.test(idRaw)
+        ? Number(idRaw)
+        : 0;
+
+  return { id, username, email };
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -103,23 +142,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const storedUser = localStorage.getItem(USER_KEY);
 
       if (token && !isTokenExpired(token)) {
+        const tokenIdentity = getIdentityFromToken(token);
         try {
           if (storedUser) {
             const parsedUser = JSON.parse(storedUser) as User;
             // Ensure role is always extracted from token as backup
             if (!parsedUser.role) {
               parsedUser.role = getRoleFromToken(token) || 'USER';
-              localStorage.setItem(USER_KEY, JSON.stringify(parsedUser));
             }
+            if (!parsedUser.status) {
+              parsedUser.status = 'ACTIVE';
+            }
+            if (!parsedUser.username && tokenIdentity.username) {
+              parsedUser.username = tokenIdentity.username;
+            }
+            if (!parsedUser.email && tokenIdentity.email) {
+              parsedUser.email = tokenIdentity.email;
+            }
+            if (!parsedUser.id && tokenIdentity.id) {
+              parsedUser.id = tokenIdentity.id;
+            }
+            localStorage.setItem(USER_KEY, JSON.stringify(parsedUser));
             setUser(parsedUser);
           } else {
             // Token exists but no stored user - create from token
             const roleFromToken = getRoleFromToken(token) || 'USER';
+            const fallbackName = tokenIdentity.username || tokenIdentity.email || '';
             const userData: User = {
-              id: 0,
-              email: '',
-              username: '',
+              id: tokenIdentity.id || 0,
+              email: tokenIdentity.email,
+              username: fallbackName,
               role: roleFromToken,
+              status: 'ACTIVE',
             };
             setUser(userData);
           }
@@ -167,11 +221,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const finalRole = roleFromResponse || roleFromToken || 'USER';
       
       // Store user info
+      const tokenIdentity = getIdentityFromToken(response.token);
+      const normalizedEmail =
+        username.includes('@') ? username : tokenIdentity.email;
+      const normalizedUsername = username || tokenIdentity.username;
+
       const userData: User = {
-        id: 0,
-        email: username,
-        username,
+        id: tokenIdentity.id || 0,
+        email: normalizedEmail || '',
+        username: normalizedUsername || '',
         role: finalRole,
+        status: 'ACTIVE',
       };
       localStorage.setItem(USER_KEY, JSON.stringify(userData));
       
@@ -200,11 +260,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const finalRole = roleFromResponse || roleFromToken || 'USER';
       
       // Store user info
+      const tokenIdentity = getIdentityFromToken(response.token);
       const userData: User = {
-        id: 0,
+        id: tokenIdentity.id || 0,
         email,
         username,
         role: finalRole,
+        status: 'ACTIVE',
       };
       localStorage.setItem(USER_KEY, JSON.stringify(userData));
       

@@ -1,11 +1,11 @@
 import type { FormEvent } from 'react';
 import type { NextPage } from 'next';
-import { useRouter } from 'next/router';
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
-import { signIn } from '../services/auth';
 import { z } from 'zod';
+import { useAuth } from '../context/AuthContext';
 
 // Validation schema for login form
 const loginSchema = z.object({
@@ -23,6 +23,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 const LoginPage: NextPage = () => {
   const router = useRouter();
+  const { signIn } = useAuth();
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
   const [error, setError] = useState('');
@@ -39,7 +40,7 @@ const LoginPage: NextPage = () => {
         const fieldErrors: Partial<LoginFormData> = {};
         err.issues.forEach((issue) => {
           if (issue.path[0]) {
-            fieldErrors[issue.path[0] as keyof LoginFormData] = issue.message as any;
+            fieldErrors[issue.path[0] as keyof LoginFormData] = issue.message;
           }
         });
         setErrors(fieldErrors);
@@ -67,11 +68,8 @@ const LoginPage: NextPage = () => {
     setIsSubmitting(true);
 
     try {
-      await signIn({ username: formData.username, password: formData.password });
-      // Small delay to ensure token is stored in localStorage before refresh
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
+      await signIn(formData.username, formData.password);
+      void router.push('/', undefined, { scroll: true });
     } catch (err) {
       // Handle specific error types
       if (err instanceof Error) {
@@ -92,7 +90,7 @@ const LoginPage: NextPage = () => {
   return (
     <>
       <Head>
-        <title>ShopLite · Sign In</title>
+        <title>ShopLite - Sign In</title>
         <meta name="description" content="Sign in to your ShopLite account to manage orders and inventory." />
       </Head>
       <main className="layout">
@@ -207,7 +205,7 @@ const LoginPage: NextPage = () => {
               {isSubmitting ? (
                 <>
                   <span className="spinner"></span>
-                  Signing in…
+                  Signing in...
                 </>
               ) : (
                 'Sign In'
@@ -216,7 +214,7 @@ const LoginPage: NextPage = () => {
 
             {/* Sign up link */}
             <p className="form-footer-hint">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link href="/register" className="form-link">
                 Create one now
               </Link>
