@@ -361,8 +361,8 @@ const ProductDetailPage: NextPage = () => {
 
   if (isLoading || !product) {
     return (
-      <main className="layout">
-        <div className="empty-state">
+      <main className="layout mx-auto max-w-6xl px-4 py-10">
+        <div className="empty-state rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
           <h2>{isLoading ? 'Fetching product details' : 'Preparing product view'}</h2>
           <p>We are retrieving the latest data from your Spring Boot API.</p>
         </div>
@@ -375,21 +375,21 @@ const ProductDetailPage: NextPage = () => {
       <Head>
         <title>{product.name} - ShopLite</title>
       </Head>
-      <main className="layout">
-        <div className="section-title">
+      <main className="layout mx-auto max-w-6xl px-4 py-10">
+        <div className="section-title mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="page-title">{product.name}</h1>
             <p className="page-subtitle">
               Elevate merch drops, onboarding kits, and digital-first experiences with a premium presentation.
             </p>
           </div>
-          <Link className="button button-ghost" href="/product/featured">
+          <Link className="button button-ghost rounded-full px-4 py-2 text-sm" href="/product/featured">
             Browse featured
           </Link>
         </div>
 
         {error && (
-          <div className="status-message status-message-error" role="alert">
+          <div className="status-message status-message-error mb-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700" role="alert">
             <span>{error}</span>
             <span className="form-hint">
               Ensure the Spring Boot product endpoint is reachable at http://localhost:8080/api/products/{'{id}'}.
@@ -398,40 +398,40 @@ const ProductDetailPage: NextPage = () => {
         )}
 
         <section className="product-hero-shell">
-          <article className="product-detail product-detail-modern-v3">
-            <div className="product-gallery-shell">
+          <article className="product-detail product-detail-modern-v3 grid gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:grid-cols-2">
+            <div className="product-gallery-shell relative">
               <button
-                className="product-favorite-button"
+                className="product-favorite-button absolute right-3 top-3 z-10 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm shadow"
                 type="button"
                 onClick={handleToggleWishlist}
                 aria-label={isSaved ? 'Remove from wishlist' : 'Save to wishlist'}
               >
                 {isSaved ? '♥' : '♡'}
               </button>
-              <span className={`product-stock-badge ${product.stock <= 0 ? 'is-empty' : product.stock < 4 ? 'is-low' : 'is-ok'}`}>
+              <span className={`product-stock-badge inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${product.stock <= 0 ? 'is-empty bg-rose-100 text-rose-700 ring-rose-200' : product.stock < 4 ? 'is-low bg-amber-100 text-amber-700 ring-amber-200' : 'is-ok bg-emerald-100 text-emerald-700 ring-emerald-200'}`}>
                 {stockLabel}
               </span>
               <Image
                 alt={product.name}
                 src={selectedImage ?? galleryImages[0]}
-                className="product-image product-image-modern"
+                className="product-image product-image-modern h-auto w-full rounded-xl object-cover"
                 width={720}
                 height={480}
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
               <div className="product-image-overlay">
                 {tagTokens.map((tag) => (
-                  <span key={tag} className="pill">
+                  <span key={tag} className="pill inline-flex rounded-full bg-slate-900/80 px-2.5 py-1 text-xs font-medium text-white">
                     {tag}
                   </span>
                 ))}
               </div>
-              <div className="product-thumbnail-row">
+              <div className="product-thumbnail-row mt-3 grid grid-cols-4 gap-2">
                 {galleryImages.map((imageUrl) => (
                   <button
                     key={imageUrl}
                     type="button"
-                    className={`product-thumbnail ${imageUrl === (selectedImage ?? galleryImages[0]) ? 'is-active' : ''}`}
+                    className={`product-thumbnail overflow-hidden rounded-lg border ${imageUrl === (selectedImage ?? galleryImages[0]) ? 'is-active border-blue-500 ring-2 ring-blue-200' : 'border-slate-200'}`}
                     onClick={() => setSelectedImage(imageUrl)}
                     aria-label="Select product image"
                   >
@@ -441,13 +441,13 @@ const ProductDetailPage: NextPage = () => {
               </div>
             </div>
 
-            <div className="product-meta product-meta-modern-v3">
+            <div className="product-meta product-meta-modern-v3 flex flex-col gap-4">
               <div className="product-kicker">{tagTokens[0] ? `${tagTokens[0]} collection` : 'New collection'}</div>
               <h2 className="product-detail-title">{product.name}</h2>
 
-              <div className="product-price-row">
+              <div className="product-price-row flex flex-wrap items-center justify-between gap-3">
                 <p className="product-price">${product.price.toFixed(2)}</p>
-                <div className="product-rating-badge">
+                <div className="product-rating-badge flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm">
                   <span className="rating-stars">{buildStarRow(Math.round(averageRating || 0))}</span>
                   <a href="#product-reviews">
                     {reviews.length > 0 ? `${averageRating.toFixed(1)} · ${reviews.length} reviews` : 'No reviews yet'}
@@ -459,43 +459,43 @@ const ProductDetailPage: NextPage = () => {
                 {product.description ?? 'Product description coming soon. Connect your API payload for richer copy.'}
               </p>
 
-              <div className="product-fact-grid">
-                <div className="product-fact-card">
+              <div className="product-fact-grid grid gap-2 sm:grid-cols-2">
+                <div className="product-fact-card rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <span className="product-fact-label">Availability</span>
                   <strong>{stockLabel}</strong>
                 </div>
-                <div className="product-fact-card">
+                <div className="product-fact-card rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <span className="product-fact-label">Shipping</span>
                   <strong>{product.stock > 0 ? 'Ships in 24h' : 'Backorder soon'}</strong>
                 </div>
-                <div className="product-fact-card">
+                <div className="product-fact-card rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <span className="product-fact-label">Return</span>
                   <strong>30-day return</strong>
                 </div>
-                <div className="product-fact-card">
+                <div className="product-fact-card rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <span className="product-fact-label">Size</span>
                   <strong>Standard fit</strong>
                 </div>
-                <div className="product-fact-card">
+                <div className="product-fact-card rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <span className="product-fact-label">Weight</span>
                   <strong>Lightweight build</strong>
                 </div>
               </div>
 
-              <div className="product-highlights-grid">
+              <div className="product-highlights-grid grid gap-2">
                 {productHighlights.slice(0, 4).map((highlight) => (
-                  <div key={highlight} className="product-highlight-card">
+                  <div key={highlight} className="product-highlight-card flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
                     <span className="highlight-dot" aria-hidden="true" />
                     <span>{highlight}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="product-cta product-cta-modern">
-                <div className="quantity-picker" aria-label="Quantity selector">
+              <div className="product-cta product-cta-modern flex flex-wrap items-center gap-3">
+                <div className="quantity-picker inline-flex items-center gap-2 rounded-full border border-slate-300 px-2 py-1" aria-label="Quantity selector">
                   <button
                     type="button"
-                    className="quantity-button"
+                    className="quantity-button inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300"
                     onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
                   >
                     -
@@ -503,21 +503,21 @@ const ProductDetailPage: NextPage = () => {
                   <span>{quantity}</span>
                   <button
                     type="button"
-                    className="quantity-button"
+                    className="quantity-button inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300"
                     onClick={() => setQuantity((prev) => Math.min(Math.max(1, product.stock), prev + 1))}
                   >
                     +
                   </button>
                 </div>
                 <button
-                  className="button button-dark"
+                  className="button button-dark rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white"
                   type="button"
                   onClick={handleAddToCart}
                   disabled={isAddingToCart || !product || product.stock <= 0}
                 >
                   {isAddingToCart ? 'Adding...' : 'Add to cart'}
                 </button>
-                <button className="button button-ghost" type="button" onClick={handleBuyNow}>
+                <button className="button button-ghost rounded-full px-4 py-2 text-sm" type="button" onClick={handleBuyNow}>
                   Buy now
                 </button>
                 <span className="product-secure-note">Secure checkout • 30-day return</span>
@@ -526,20 +526,20 @@ const ProductDetailPage: NextPage = () => {
           </article>
         </section>
 
-        <section className="product-tabs-shell">
-          <div className="product-tab-list" role="tablist" aria-label="Product details tabs">
-            <button type="button" className={`product-tab ${activeTab === 'description' ? 'is-active' : ''}`} onClick={() => setActiveTab('description')}>Description</button>
-            <button type="button" className={`product-tab ${activeTab === 'specifications' ? 'is-active' : ''}`} onClick={() => setActiveTab('specifications')}>Specifications</button>
-            <button type="button" className={`product-tab ${activeTab === 'reviews' ? 'is-active' : ''}`} onClick={() => setActiveTab('reviews')}>Reviews</button>
+        <section className="product-tabs-shell mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="product-tab-list mb-3 flex flex-wrap gap-2" role="tablist" aria-label="Product details tabs">
+            <button type="button" className={`product-tab rounded-full px-3 py-1.5 text-sm ${activeTab === 'description' ? 'is-active bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`} onClick={() => setActiveTab('description')}>Description</button>
+            <button type="button" className={`product-tab rounded-full px-3 py-1.5 text-sm ${activeTab === 'specifications' ? 'is-active bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`} onClick={() => setActiveTab('specifications')}>Specifications</button>
+            <button type="button" className={`product-tab rounded-full px-3 py-1.5 text-sm ${activeTab === 'reviews' ? 'is-active bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`} onClick={() => setActiveTab('reviews')}>Reviews</button>
           </div>
-          <div className="product-tab-panel">
+          <div className="product-tab-panel rounded-lg border border-slate-200 bg-slate-50 p-4">
             {activeTab === 'description' && (
               <p className="product-description-lead">
                 {product.description ?? 'Product description coming soon. Connect your API payload for richer copy.'}
               </p>
             )}
             {activeTab === 'specifications' && (
-              <ul className="product-highlights">
+              <ul className="product-highlights list-disc space-y-1 pl-5">
                 {productHighlights.map((highlight) => (
                   <li key={highlight}>{highlight}</li>
                 ))}
@@ -555,7 +555,7 @@ const ProductDetailPage: NextPage = () => {
         </section>
 
         {relatedProducts.length > 0 && (
-          <section className="section-spaced">
+          <section className="section-spaced mt-10">
             <div className="section-title">
               <div>
                 <h2>You might also like</h2>
@@ -571,14 +571,14 @@ const ProductDetailPage: NextPage = () => {
         )}
 
         {recentProducts.length > 0 && (
-          <section className="section-spaced">
-            <div className="section-title">
+          <section className="section-spaced mt-10">
+            <div className="section-title mb-4">
               <div>
                 <h2>Recently viewed</h2>
                 <p className="section-subtitle">Continue where you left off.</p>
               </div>
             </div>
-            <div className="product-grid">
+            <div className="product-grid grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {recentProducts.map((recent) => (
                 <ProductCard key={recent.id} product={recent} />
               ))}
@@ -586,35 +586,35 @@ const ProductDetailPage: NextPage = () => {
           </section>
         )}
 
-        <section className="section-spaced" id="product-reviews">
-          <div className="section-title">
+        <section className="section-spaced mt-10" id="product-reviews">
+          <div className="section-title mb-4">
             <div>
               <h2>Reviews</h2>
               <p className="section-subtitle">Share feedback to help other shoppers.</p>
             </div>
           </div>
 
-          <div className="reviews-grid">
-            <form className="review-form" onSubmit={handleReviewSubmit}>
+          <div className="reviews-grid grid gap-6 lg:grid-cols-[320px_1fr]">
+            <form className="review-form rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" onSubmit={handleReviewSubmit}>
               <div className="review-form-title">
                 <h3>Write a review</h3>
                 <p>Tell other shoppers what stood out for you.</p>
               </div>
-              <div className="form-field">
+              <div className="form-field grid gap-1">
                 <label className="form-label" htmlFor="reviewAuthor">Name</label>
                 <input
                   id="reviewAuthor"
-                  className="form-input"
+                  className="form-input h-10 rounded-md border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none"
                   value={reviewAuthor}
                   onChange={(event) => setReviewAuthor(event.target.value)}
                   placeholder="Your name"
                 />
               </div>
-              <div className="form-field">
+              <div className="form-field grid gap-1">
                 <label className="form-label" htmlFor="reviewRating">Rating</label>
                 <select
                   id="reviewRating"
-                  className="form-input"
+                  className="form-input h-10 rounded-md border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none"
                   value={reviewRating}
                   onChange={(event) => setReviewRating(Number(event.target.value))}
                 >
@@ -623,35 +623,35 @@ const ProductDetailPage: NextPage = () => {
                   ))}
                 </select>
               </div>
-              <div className="form-field">
+              <div className="form-field grid gap-1">
                 <label className="form-label" htmlFor="reviewComment">Comment</label>
                 <textarea
                   id="reviewComment"
-                  className="form-input"
+                  className="form-input rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                   rows={4}
                   value={reviewComment}
                   onChange={(event) => setReviewComment(event.target.value)}
                   placeholder="Share what you liked..."
                 />
               </div>
-              <button className="button button-primary" type="submit">
+              <button className="button button-primary rounded-full px-4 py-2 text-sm font-medium" type="submit">
                 Submit review
               </button>
             </form>
 
-            <div className="review-list">
-              <div className="review-summary-card">
+            <div className="review-list grid gap-4">
+              <div className="review-summary-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="review-summary-top">
                   <strong>{reviews.length > 0 ? averageRating.toFixed(1) : '0.0'}</strong>
                   <span>{buildStarRow(Math.round(averageRating || 0))}</span>
                   <small>{reviews.length} review{reviews.length === 1 ? '' : 's'}</small>
                 </div>
-                <div className="review-bars">
+                <div className="review-bars mt-3 grid gap-2">
                   {ratingBreakdown.map((row) => (
-                    <div key={row.score} className="review-bar-row">
+                    <div key={row.score} className="review-bar-row grid grid-cols-[24px_1fr_24px] items-center gap-2 text-sm">
                       <span>{row.score}</span>
-                      <div className="review-bar-track" aria-hidden="true">
-                        <span style={{ width: `${row.percent}%` }} />
+                      <div className="review-bar-track h-2 overflow-hidden rounded-full bg-slate-200" aria-hidden="true">
+                        <span className="block h-full bg-blue-600" style={{ width: `${row.percent}%` }} />
                       </div>
                       <span>{row.count}</span>
                     </div>
@@ -660,20 +660,20 @@ const ProductDetailPage: NextPage = () => {
               </div>
 
               {reviews.length === 0 ? (
-                <div className="empty-state">
+                <div className="empty-state rounded-xl border border-slate-200 bg-white p-8 text-center">
                   <h3>No reviews yet</h3>
                   <p>Be the first to share your experience.</p>
                 </div>
               ) : (
                 reviews.map((review) => (
-                  <div key={review.id} className="review-card">
-                    <div className="review-header">
-                      <div className="review-author-block">
-                        <span className="review-avatar" aria-hidden="true">{getInitials(review.author)}</span>
+                  <div key={review.id} className="review-card rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="review-header mb-3 flex items-start justify-between gap-3">
+                      <div className="review-author-block flex items-start gap-3">
+                        <span className="review-avatar inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white" aria-hidden="true">{getInitials(review.author)}</span>
                         <div>
                           <strong>{review.author}</strong>
-                          <div className="review-meta-row">
-                            <span className="review-verified">Verified buyer</span>
+                          <div className="review-meta-row flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                            <span className="review-verified inline-flex rounded-full bg-emerald-100 px-2 py-0.5 font-medium text-emerald-700">Verified buyer</span>
                             <span>{new Date(review.createdAt).toLocaleDateString()}</span>
                             <span>{getRelativeTimeLabel(review.createdAt)}</span>
                           </div>

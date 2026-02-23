@@ -65,7 +65,7 @@ const AdminPage: NextPage = () => {
   const [productSearch, setProductSearch] = useState('');
   const [activeNav, setActiveNav] = useState<'dashboard' | 'orders' | 'products' | 'customers'>('dashboard');
   const [productStockFilter, setProductStockFilter] = useState<'ALL' | 'LOW' | 'HEALTHY'>('ALL');
-  const [productView, setProductView] = useState<'GRID' | 'TABLE'>('GRID');
+  const [productView] = useState<'TABLE' | 'GRID'>('TABLE');
   const [dismissedLowStockAlert, setDismissedLowStockAlert] = useState(false);
   const [orderSearch, setOrderSearch] = useState('');
   const [orderFilter, setOrderFilter] = useState<'ALL' | 'PENDING' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED'>('ALL');
@@ -642,20 +642,20 @@ const AdminPage: NextPage = () => {
 
   return (
     <ProtectedRoute requiredRole="ADMIN">
-      <div className="admin-shell">
-        <aside className="admin-sidebar">
-          <div className="admin-brand">
+      <div className="admin-shell min-h-screen bg-slate-100">
+        <aside className="admin-sidebar border-r border-slate-700/40">
+          <div className="admin-brand mb-8">
             <span className="brand-dot" />
             <div>
               <div className="brand-title">ShopLite Admin</div>
               <div className="brand-sub">Control center</div>
             </div>
           </div>
-          <nav className="admin-nav" aria-label="Admin navigation">
+          <nav className="admin-nav gap-2" aria-label="Admin navigation">
             {navItems.map((item) => (
               <button
                 key={item.label}
-                className={`admin-nav-item ${activeNav === item.target ? 'is-active' : ''}`}
+                className={`admin-nav-item rounded-xl px-4 py-3 text-sm font-medium transition ${activeNav === item.target ? 'is-active' : ''}`}
                 type="button"
                 onClick={() => handleNavClick(item.target)}
               >
@@ -664,37 +664,37 @@ const AdminPage: NextPage = () => {
               </button>
             ))}
           </nav>
-          <div className="admin-sidebar-footer">
-            <div className="mini-card">
+          <div className="admin-sidebar-footer mt-6">
+            <div className="mini-card rounded-xl border border-white/10 bg-white/5 p-4">
               <div>
                 <div className="mini-label">Low stock</div>
                 <div className="mini-value">{summary.lowStock.length}</div>
               </div>
               <span className="pill status-warning">Alert</span>
             </div>
-            <button className="button button-ghost" type="button" onClick={() => void loadProducts()}>
+             <button className="button button-ghost rounded-full border border-white/20 px-3 py-1.5 text-sm text-white/90" type="button" onClick={() => void loadProducts()}>
               Refresh data
             </button>
           </div>
         </aside>
 
-        <div className="admin-main">
-          <header className="admin-topbar">
-            <div className="admin-search">
+        <div className="admin-main bg-slate-50/40">
+          <header className="admin-topbar border-b border-slate-200 bg-white/90 px-6 py-4 shadow-sm backdrop-blur">
+            <div className="admin-search flex max-w-xl flex-1 items-center gap-3">
               <input
-                className="admin-search-input"
+                className="admin-search-input h-10 w-full rounded-full border border-slate-300 bg-white px-4 text-sm outline-none ring-0 focus:border-blue-500"
                 placeholder="Search products or orders"
                 value={productSearch}
                 onChange={(event) => setProductSearch(event.target.value)}
               />
-              <button className="button button-ghost" type="button" onClick={() => setProductSearch('')}>
+              <button className="button button-ghost rounded-full px-3 py-1.5 text-sm" type="button" onClick={() => setProductSearch('')}>
                 Clear
               </button>
             </div>
-            <div className="admin-topbar-actions">
+            <div className="admin-topbar-actions relative flex items-center gap-4">
               <button
                 type="button"
-                className={`badge-dot ${hasNotification ? 'has-alert' : ''}`}
+                className={`badge-dot relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-sm ${hasNotification ? 'has-alert' : ''}`}
                 aria-label={hasNotification ? `Notifications: ${notifications.length}` : 'No notifications'}
                 onClick={() => setNotificationOpen((open) => !open)}
               >
@@ -702,12 +702,12 @@ const AdminPage: NextPage = () => {
                 {ordersBadgeCount > 0 && <span className="notification-count">{ordersBadgeCount}</span>}
               </button>
               {notificationOpen && (
-                <div className="notification-panel" role="dialog" aria-label="Notifications">
+                 <div className="notification-panel absolute right-0 top-12 z-50 w-72 rounded-xl border border-slate-200 bg-white p-3 shadow-xl" role="dialog" aria-label="Notifications">
                   <div className="notification-header">
                     <span>Notifications</span>
                     {notifications.length > 0 && (
                       <button
-                        className="button button-ghost"
+                        className="button button-ghost rounded-full px-3 py-1 text-xs"
                         type="button"
                         onClick={() => {
                           setDismissedOrdersNotice(true);
@@ -733,8 +733,8 @@ const AdminPage: NextPage = () => {
                   )}
                 </div>
               )}
-              <div className="admin-profile">
-                <div className="avatar">A</div>
+                 <div className="admin-profile flex items-center gap-3">
+                 <div className="avatar h-10 w-10 rounded-xl">A</div>
                 <div>
                   <div className="profile-name">Admin</div>
                   <div className="profile-role">Store owner</div>
@@ -743,66 +743,76 @@ const AdminPage: NextPage = () => {
             </div>
           </header>
 
-          <main className="admin-content">
+          <main className="admin-content px-6 py-8">
             {activeNav === 'dashboard' && (
               <>
-                <section className="admin-hero">
+                <section className="admin-hero mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white shadow-lg">
                   <div>
-                    <h1 className="page-title">Admin dashboard</h1>
-                    <p className="page-subtitle">Monitor sales, inventory, and customers in one place.</p>
+                    <h1 className="page-title tracking-tight">Admin dashboard</h1>
+                    <p className="page-subtitle text-blue-100">Monitor sales, inventory, and customers in one place.</p>
                   </div>
-                  <div className="hero-actions">
-                    <Link className="button button-ghost" href="/">
+                  <div className="hero-actions flex flex-wrap gap-2">
+                    <Link className="button button-ghost rounded-full border border-white/25 px-3 py-1.5 text-sm text-white" href="/">
                       Back to store
                     </Link>
-                    <button className="button button-ghost" type="button" onClick={() => void loadProducts()}>
+                    <button className="button button-ghost rounded-full border border-white/25 px-3 py-1.5 text-sm text-white" type="button" onClick={() => void loadProducts()}>
                       Sync data
                     </button>
-                    <button className="button button-primary" type="button" onClick={() => handleProductFormReset()}>
-                      Add product
+                    <button
+                      className="button button-primary rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:bg-blue-700 hover:shadow-lg"
+                      type="button"
+                      onClick={() => {
+                        handleProductFormReset();
+                        setActiveNav('products');
+                        setTimeout(() => {
+                          document.querySelector('.product-editor-form')?.scrollIntoView({ behavior: 'smooth' });
+                        }, 100);
+                      }}
+                    >
+                      + Add product
                     </button>
                   </div>
                 </section>
 
-                <section className="admin-cards">
-                  <article className="admin-card">
+                <section className="admin-cards mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <article className="admin-card rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="card-label">Total orders</div>
                     <div className="card-value">{summary.orders}</div>
                     <div className="card-foot">{ordersLoading ? 'Loading orders...' : `${salesToday.count} today`}</div>
                   </article>
-                  <article className="admin-card">
+                  <article className="admin-card rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="card-label">Total revenue</div>
                     <div className="card-value">${summary.revenue.toFixed(2)}</div>
                     <div className="card-foot">${salesToday.total.toFixed(2)} today</div>
                   </article>
-                  <article className="admin-card">
+                  <article className="admin-card rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="card-label">Products</div>
                     <div className="card-value">{summary.products}</div>
                     <div className="card-foot">{summary.lowStock.length} low stock</div>
                   </article>
-                  <article className="admin-card">
+                  <article className="admin-card rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="card-label">Customers</div>
                     <div className="card-value">{users.length}</div>
                     <div className="card-foot">Active accounts</div>
                   </article>
                 </section>
 
-                <section className="admin-grid">
-                  <article className="panel">
-                    <div className="panel-header">
+                <section className="admin-grid grid gap-6 xl:grid-cols-[1fr_400px]">
+                  <article className="panel rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="panel-header flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <h3>Recent orders</h3>
                         <p className="form-hint">Latest transactions with quick status.</p>
                       </div>
-                      <div className="toolbar compact">
+                      <div className="toolbar compact flex flex-wrap gap-2">
                         <input
-                          className="toolbar-input"
+                          className="toolbar-input h-10 min-w-[220px] rounded-md border border-slate-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none"
                           placeholder="Search order ID"
                           value={orderSearch}
                           onChange={(event) => setOrderSearch(event.target.value)}
                         />
                         <select
-                          className="toolbar-input"
+                          className="toolbar-input h-10 min-w-[180px] rounded-md border border-slate-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none"
                           value={orderFilter}
                           onChange={(event) => setOrderFilter(event.target.value as typeof orderFilter)}
                         >
@@ -1072,31 +1082,71 @@ const AdminPage: NextPage = () => {
 
             {activeNav === 'products' && (
               <section className="panel products-panel products-panel-enhanced">
-                <div className="panel-header products-panel-header products-header-enhanced">
-                  <div className="products-header-copy products-header-copy-enhanced">
-                    <h3>Product management</h3>
-                    <p className="form-hint">Manage catalog, inventory health, and publishing in one workflow.</p>
-                    <div className="products-stats">
-                      <div className="products-stat">
-                        <span className="products-stat-label">Total products</span>
-                        <span className="products-stat-value">{products.length}</span>
-                      </div>
-                      <div className={`products-stat ${filteredLowStockCount > 0 ? 'is-warning' : ''}`}>
-                        <span className="products-stat-label">Low stock</span>
-                        <span className="products-stat-value">{filteredLowStockCount}</span>
-                      </div>
-                      <div className="products-stat">
-                        <span className="products-stat-label">Selected</span>
-                        <span className="products-stat-value">{selectedProductIds.length}</span>
-                      </div>
+                  <span className="products-header-orb products-header-orb-a" aria-hidden="true" />
+                  <span className="products-header-orb products-header-orb-b" aria-hidden="true" />
+                  <div className="products-header-top">
+                    <div className="products-header-copy products-header-copy-enhanced">
+                      <h3 className="products-header-title ">Product management</h3>
+                      <p className="form-hint products-header-subtitle">Manage catalog, inventory health, and publishing in one workflow.</p>
                     </div>
-                  </div>
-                  <div className="products-header-actions">
-                    <button className="button button-primary" type="button" onClick={() => handleProductFormReset()}>
-                      + Add product
+                    <button
+                      className="button button-primary products-header-cta"
+                      type="button"
+                      onClick={() => {
+                        handleProductFormReset();
+                        setTimeout(() => {
+                          document.querySelector('.product-editor-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 100);
+                      }}
+                    >
+                      <svg className="products-cta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span>Add Product</span>
                     </button>
                   </div>
-                </div>
+                  <div className="products-stat-grid">
+                    <article className="products-stat-card products-stat-card-total">
+                      <div className="products-stat-card-head">
+                        <span className="products-stat-card-label">Total products</span>
+                        <span className="products-stat-card-icon">📦</span>
+                      </div>
+                      <strong className="products-stat-card-value">{products.length}</strong>
+                      <div className="products-stat-progress"><span style={{ width: `${Math.min(100, Math.max(8, products.length * 4))}%` }} /></div>
+                      <p className="products-stat-note">Catalog growth is healthy.</p>
+                    </article>
+                    <article className={`products-stat-card products-stat-card-low ${filteredLowStockCount > 0 ? 'is-alert' : ''}`}>
+                      <div className="products-stat-card-head">
+                        <span className="products-stat-card-label">Low stock</span>
+                        <span className="products-stat-card-icon">⚠️</span>
+                      </div>
+                      <strong className="products-stat-card-value">{filteredLowStockCount}</strong>
+                      <div className="products-stat-progress"><span style={{ width: `${Math.min(100, Math.max(8, filteredProducts.length > 0 ? Math.round((filteredLowStockCount / filteredProducts.length) * 100) : 8))}%` }} /></div>
+                      <p className="products-stat-note">{filteredLowStockCount > 0 ? 'Needs attention now.' : 'All inventory is healthy.'}</p>
+                    </article>
+                    <article className={`products-stat-card products-stat-card-selected ${selectedProductIds.length > 0 ? 'is-selected' : ''}`}>
+                      <div className="products-stat-card-head">
+                        <span className="products-stat-card-label">Selected</span>
+                        <span className="products-stat-card-icon">✅</span>
+                      </div>
+                      <strong className="products-stat-card-value">{selectedProductIds.length}</strong>
+                      <div className="products-stat-progress"><span style={{ width: `${Math.min(100, Math.max(8, pagedProducts.length > 0 ? Math.round((selectedProductIds.length / pagedProducts.length) * 100) : 8))}%` }} /></div>
+                      <p className="products-stat-note">{selectedProductIds.length > 0 ? 'Ready for bulk actions.' : 'Select items to batch edit.'}</p>
+                      {selectedProductIds.length > 0 && (
+                        <button className="products-inline-action" type="button" onClick={() => setSelectedProductIds([])}>
+                          Clear selection
+                        </button>
+                      )}
+                    </article>
+                  </div>
+                  <div className="products-tips-bar" aria-label="Quick tips">
+                    <span className="products-tip-pill">Tip: press Enter after typing search</span>
+                    <span className="products-tip-pill">Use Low Stock filter for quick restock</span>
+                    <span className="products-tip-pill">Bulk actions apply to selected products</span>
+                  </div>
+                
+                
+                
                 <div className="toolbar compact products-toolbar toolbar-enhanced">
                   <div className="products-search-wrap">
                     <span className="products-search-icon" aria-hidden="true">Search</span>
@@ -1116,9 +1166,8 @@ const AdminPage: NextPage = () => {
                     <option value="LOW">Low Stock (&lt;= 5)</option>
                     <option value="HEALTHY">Healthy Stock</option>
                   </select>
-                  <div className="view-toggle" role="tablist" aria-label="Product view mode">
-                    <button type="button" className={`button button-ghost ${productView === 'GRID' ? 'is-active' : ''}`} onClick={() => setProductView('GRID')}>Grid</button>
-                    <button type="button" className={`button button-ghost ${productView === 'TABLE' ? 'is-active' : ''}`} onClick={() => setProductView('TABLE')}>Table</button>
+                  <div className="view-toggle" aria-label="Product view mode">
+                    <span className="button button-ghost is-active" role="status" aria-live="polite">Table view</span>
                   </div>
                 </div>
                 {!dismissedLowStockAlert && filteredLowStockCount > 0 && (
@@ -1234,11 +1283,11 @@ const AdminPage: NextPage = () => {
                     <table className="table table-striped product-table product-table-compact">
                       <colgroup>
                         <col style={{ width: '48px' }} />
-                        <col />
-                        <col style={{ width: '160px' }} />
-                        <col style={{ width: '120px' }} />
-                        <col style={{ width: '140px' }} />
-                        <col style={{ width: '210px' }} />
+                        <col style={{ width: '42%' }} />
+                        <col style={{ width: '18%' }} />
+                        <col style={{ width: '12%' }} />
+                        <col style={{ width: '13%' }} />
+                        <col style={{ width: '15%' }} />
                       </colgroup>
                       <thead>
                         <tr>
@@ -1300,43 +1349,47 @@ const AdminPage: NextPage = () => {
                                 ${product.price.toFixed(2)}
                               </td>
                               <td className="cell-sub product-stock" data-label="Stock">
-                                <span className={`pill ${product.stock <= 5 ? 'status-warning' : 'status-success'}`}>
-                                  {product.stock <= 5 ? 'Low stock' : 'In stock'}
-                                </span>
-                                <span className="cell-sub">{product.stock} units</span>
-                              </td>
-                              <td className="cell-actions product-actions-cell" data-label="Actions">
-                                <div className="product-actions-main">
-                                  <button className="button button-ghost" type="button" onClick={() => handleProductSelect(product.id)}>
-                                    Edit
-                                  </button>
-                                  <button className="button button-ghost" type="button" onClick={() => void handleRestockSingleProduct(product.id)} disabled={restockingProductId === product.id || !parsedRestockTarget || product.stock > 5}>
-                                    Restock
-                                  </button>
-                                  <button
-                                    className="button button-danger"
-                                    type="button"
-                                    onClick={() => setConfirmProductId(product.id)}
-                                    disabled={deletingProductId === product.id}
-                                  >
-                                    {deletingProductId === product.id ? 'Deleting...' : 'Delete'}
-                                  </button>
+                                <div className="product-stock-content">
+                                  <span className={`pill ${product.stock <= 5 ? 'status-warning' : 'status-success'}`}>
+                                    {product.stock <= 5 ? 'Low stock' : 'In stock'}
+                                  </span>
+                                  <span className="cell-sub product-stock-units">{product.stock} units</span>
                                 </div>
-                                {confirmProductId === product.id && (
-                                  <div className="confirm-inline product-confirm-inline">
-                                    <span>Confirm?</span>
-                                    <button
-                                      className="button button-primary"
-                                      type="button"
-                                      onClick={() => void handleConfirmDeleteProduct(product.id)}
-                                    >
-                                      Yes
+                              </td>
+                              <td className="product-actions-cell" data-label="Actions">
+                                <div className="product-actions-content">
+                                  <div className="product-actions-main">
+                                    <button className="button button-ghost" type="button" onClick={() => handleProductSelect(product.id)}>
+                                      Edit
                                     </button>
-                                    <button className="button button-ghost" type="button" onClick={() => setConfirmProductId(null)}>
-                                      Cancel
+                                    <button className="button button-ghost" type="button" onClick={() => void handleRestockSingleProduct(product.id)} disabled={restockingProductId === product.id || !parsedRestockTarget || product.stock > 5}>
+                                      Restock
+                                    </button>
+                                    <button
+                                      className="button button-danger"
+                                      type="button"
+                                      onClick={() => setConfirmProductId(product.id)}
+                                      disabled={deletingProductId === product.id}
+                                    >
+                                      {deletingProductId === product.id ? 'Deleting...' : 'Delete'}
                                     </button>
                                   </div>
-                                )}
+                                  {confirmProductId === product.id && (
+                                    <div className="confirm-inline product-confirm-inline">
+                                      <span>Confirm?</span>
+                                      <button
+                                        className="button button-primary"
+                                        type="button"
+                                        onClick={() => void handleConfirmDeleteProduct(product.id)}
+                                      >
+                                        Yes
+                                      </button>
+                                      <button className="button button-ghost" type="button" onClick={() => setConfirmProductId(null)}>
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -1358,16 +1411,22 @@ const AdminPage: NextPage = () => {
                   </div>
                 )}
 
-                <form className="admin-form product-editor-form" onSubmit={handleSubmit(onProductSubmit)}>
-                  <div className="product-editor-header">
+                {!selectedProductId && (
+                  <div className="product-add-note" role="status" aria-live="polite">
+                    <p>You&apos;re adding a new product. Fill in all required fields (*) to create it.</p>
+                  </div>
+                )}
+
+                <form className={`admin-form product-editor-form transition-all duration-300 ${!selectedProductId ? 'product-editor-form-add-mode' : ''}`} onSubmit={handleSubmit(onProductSubmit)}>
+                  <div className="product-editor-header product-editor-header-highlight">
                     <div>
-                      <h4>{selectedProductId ? 'Edit product' : 'New product'}</h4>
+                      <h4>{selectedProductId ? 'Edit product' : 'Add new product'}</h4>
                       <p className="form-hint">
-                        {selectedProductId ? `Editing ${editingProductName}` : 'Create a polished listing with live preview.'}
+                        {selectedProductId ? `Editing ${editingProductName}` : 'Fill in the details below to create a new product.'}
                       </p>
                     </div>
                     <div className="product-editor-header-actions">
-                      <button className="button button-ghost" type="button" onClick={handleProductFormReset}>
+                      <button className="button button-ghost text-gray-600 hover:text-gray-800" type="button" onClick={handleProductFormReset}>
                         Reset
                       </button>
                     </div>
@@ -1515,6 +1574,38 @@ const AdminPage: NextPage = () => {
                     </button>
                   </div>
                 </form>
+
+                <button
+                  className="products-add-fab"
+                  type="button"
+                  onClick={() => {
+                    handleProductFormReset();
+                    setTimeout(() => {
+                      document.querySelector('.product-editor-form')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }}
+                  aria-label="Add new product"
+                >
+                  +
+                </button>
+
+                <div className="products-mobile-bar">
+                  <button
+                    className="products-mobile-add"
+                    type="button"
+                    onClick={() => {
+                      handleProductFormReset();
+                      setTimeout(() => {
+                        document.querySelector('.product-editor-form')?.scrollIntoView({ behavior: 'smooth' });
+                      }, 100);
+                    }}
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add New Product
+                  </button>
+                </div>
               </section>
             )}
 
@@ -1690,4 +1781,3 @@ const AdminPage: NextPage = () => {
 };
 
 export default AdminPage;
-

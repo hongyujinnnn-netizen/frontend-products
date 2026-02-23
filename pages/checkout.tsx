@@ -102,11 +102,11 @@ const CheckoutPage: NextPage = () => {
   if (cartItems.length === 0 && !isProcessing) {
     return (
       <ProtectedRoute>
-        <main className="layout">
-          <div className="empty-state">
+        <main className="layout mx-auto max-w-6xl px-4 py-10">
+          <div className="empty-state rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
             <h2>Your cart is empty</h2>
             <p>Add some items before checking out.</p>
-            <Link className="button button-primary" href="/product/featured">
+            <Link className="button button-primary rounded-full px-4 py-2 text-sm font-medium" href="/product/featured">
               Continue shopping
             </Link>
           </div>
@@ -117,64 +117,64 @@ const CheckoutPage: NextPage = () => {
 
   return (
     <ProtectedRoute>
-      <main className="layout">
-        <div className="section-title">
+      <main className="layout mx-auto max-w-6xl px-4 py-10">
+        <div className="section-title mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="page-title">Checkout</h1>
             <p className="page-subtitle">Review your order and place it.</p>
           </div>
         </div>
 
-        <div className="checkout-steps">
-          <div className={`checkout-step ${step >= 1 ? 'is-active' : ''}`}>1. Shipping</div>
-          <div className={`checkout-step ${step >= 2 ? 'is-active' : ''}`}>2. Payment</div>
-          <div className={`checkout-step ${step >= 3 ? 'is-active' : ''}`}>3. Review</div>
+        <div className="checkout-steps mb-6 grid gap-3 sm:grid-cols-3">
+          <div className={`checkout-step rounded-lg border px-3 py-2 text-sm font-medium ${step >= 1 ? 'is-active border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500'}`}>1. Shipping</div>
+          <div className={`checkout-step rounded-lg border px-3 py-2 text-sm font-medium ${step >= 2 ? 'is-active border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500'}`}>2. Payment</div>
+          <div className={`checkout-step rounded-lg border px-3 py-2 text-sm font-medium ${step >= 3 ? 'is-active border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-500'}`}>3. Review</div>
         </div>
 
-        <div className="dashboard-grid">
-          <section className="panel">
+        <div className="dashboard-grid grid gap-6 lg:grid-cols-[1fr_340px]">
+          <section className="panel rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3>
               {step === 1 ? 'Shipping details' : step === 2 ? 'Payment details' : 'Review order'}
             </h3>
             {step === 1 && (
-              <div className="checkout-form">
-                <div className="form-field">
+              <div className="checkout-form grid gap-4">
+                <div className="form-field grid gap-1">
                   <label className="form-label" htmlFor="fullName">Full name</label>
                   <input
                     id="fullName"
-                    className="form-input"
+                    className="form-input h-10 rounded-md border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none"
                     value={shipping.fullName}
                     onChange={(event) => setShipping((prev) => ({ ...prev, fullName: event.target.value }))}
                     placeholder="Jane Appleseed"
                   />
                 </div>
-                <div className="form-field">
+                <div className="form-field grid gap-1">
                   <label className="form-label" htmlFor="email">Email</label>
                   <input
                     id="email"
-                    className="form-input"
+                    className="form-input h-10 rounded-md border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none"
                     type="email"
                     value={shipping.email}
                     onChange={(event) => setShipping((prev) => ({ ...prev, email: event.target.value }))}
                     placeholder="jane@email.com"
                   />
                 </div>
-                <div className="form-field">
+                <div className="form-field grid gap-1">
                   <label className="form-label" htmlFor="address">Address</label>
                   <input
                     id="address"
-                    className="form-input"
+                    className="form-input h-10 rounded-md border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none"
                     value={shipping.address}
                     onChange={(event) => setShipping((prev) => ({ ...prev, address: event.target.value }))}
                     placeholder="123 Market Street"
                   />
                 </div>
-                <div className="form-field form-duo">
+                <div className="form-field form-duo grid gap-3 sm:grid-cols-2">
                   <div>
                     <label className="form-label" htmlFor="city">City</label>
                     <input
                       id="city"
-                      className="form-input"
+                      className="form-input h-10 rounded-md border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none"
                       value={shipping.city}
                       onChange={(event) => setShipping((prev) => ({ ...prev, city: event.target.value }))}
                       placeholder="San Francisco"
@@ -184,18 +184,18 @@ const CheckoutPage: NextPage = () => {
                     <label className="form-label" htmlFor="postal">Postal code</label>
                     <input
                       id="postal"
-                      className="form-input"
+                      className="form-input h-10 rounded-md border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none"
                       value={shipping.postal}
                       onChange={(event) => setShipping((prev) => ({ ...prev, postal: event.target.value }))}
                       placeholder="94107"
                     />
                   </div>
                 </div>
-                <div className="form-field">
+                <div className="form-field grid gap-1">
                   <label className="form-label" htmlFor="country">Country</label>
                   <input
                     id="country"
-                    className="form-input"
+                    className="form-input h-10 rounded-md border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none"
                     value={shipping.country}
                     onChange={(event) => setShipping((prev) => ({ ...prev, country: event.target.value }))}
                     placeholder="United States"
@@ -205,33 +205,33 @@ const CheckoutPage: NextPage = () => {
             )}
 
             {step === 2 && (
-              <div className="checkout-form">
-                <div className="form-field">
+              <div className="checkout-form grid gap-4">
+                <div className="form-field grid gap-1">
                   <label className="form-label" htmlFor="cardName">Name on card</label>
                   <input
                     id="cardName"
-                    className="form-input"
+                    className="form-input h-10 rounded-md border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none"
                     value={payment.cardName}
                     onChange={(event) => setPayment((prev) => ({ ...prev, cardName: event.target.value }))}
                     placeholder="Jane Appleseed"
                   />
                 </div>
-                <div className="form-field">
+                <div className="form-field grid gap-1">
                   <label className="form-label" htmlFor="cardNumber">Card number</label>
                   <input
                     id="cardNumber"
-                    className="form-input"
+                    className="form-input h-10 rounded-md border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none"
                     value={payment.cardNumber}
                     onChange={(event) => setPayment((prev) => ({ ...prev, cardNumber: event.target.value }))}
                     placeholder="1234 5678 9012 3456"
                   />
                 </div>
-                <div className="form-field form-duo">
+                <div className="form-field form-duo grid gap-3 sm:grid-cols-2">
                   <div>
                     <label className="form-label" htmlFor="expiry">Expiry</label>
                     <input
                       id="expiry"
-                      className="form-input"
+                      className="form-input h-10 rounded-md border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none"
                       value={payment.expiry}
                       onChange={(event) => setPayment((prev) => ({ ...prev, expiry: event.target.value }))}
                       placeholder="MM/YY"
@@ -241,7 +241,7 @@ const CheckoutPage: NextPage = () => {
                     <label className="form-label" htmlFor="cvc">CVC</label>
                     <input
                       id="cvc"
-                      className="form-input"
+                      className="form-input h-10 rounded-md border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none"
                       value={payment.cvc}
                       onChange={(event) => setPayment((prev) => ({ ...prev, cvc: event.target.value }))}
                       placeholder="123"
@@ -253,19 +253,19 @@ const CheckoutPage: NextPage = () => {
             )}
 
             {step === 3 && (
-              <div className="checkout-review">
-                <div className="review-block">
+              <div className="checkout-review grid gap-4">
+                <div className="review-block rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <h4>Shipping</h4>
                   <p>{shipping.fullName}</p>
                   <p>{shipping.address}</p>
                   <p>{shipping.city} {shipping.postal}</p>
                   <p>{shipping.country}</p>
                 </div>
-                <div className="review-block">
+                <div className="review-block rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <h4>Order items ({itemCount})</h4>
-                  <div className="list">
+                  <div className="list grid gap-2">
                     {cartItems.map((item) => (
-                      <div key={item.product.id} className="list-item cart-line">
+                      <div key={item.product.id} className="list-item cart-line flex items-start justify-between rounded-md border border-slate-200 bg-white p-3">
                         <div>
                           <strong>{item.product.name}</strong>
                           <p className="form-hint">
@@ -286,22 +286,22 @@ const CheckoutPage: NextPage = () => {
             )}
           </section>
 
-          <section className="panel">
+          <section className="panel rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3>Order Summary</h3>
-            <div className="metric-grid">
-              <div className="card stat">
+            <div className="metric-grid grid gap-3">
+              <div className="card stat rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <span className="stat-label">Subtotal</span>
                 <span className="stat-value">${total.toFixed(2)}</span>
               </div>
-              <div className="card stat">
+              <div className="card stat rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <span className="stat-label">Shipping</span>
                 <span className="stat-value">Free</span>
               </div>
-              <div className="card stat">
+              <div className="card stat rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <span className="stat-label">Tax</span>
                 <span className="stat-value">Included</span>
               </div>
-              <div className="card stat summary-total-card">
+              <div className="card stat summary-total-card rounded-lg border border-blue-200 bg-blue-50 p-3">
                 <span className="stat-label">Total</span>
                 <span className="stat-value summary-total-value">
                   ${total.toFixed(2)}
@@ -309,26 +309,26 @@ const CheckoutPage: NextPage = () => {
               </div>
             </div>
 
-            <div className="summary-actions">
+            <div className="summary-actions mt-4 grid gap-2">
               {step > 1 && (
-                <button className="button button-ghost button-block" type="button" onClick={handlePrevStep}>
+                <button className="button button-ghost button-block rounded-full px-3 py-2 text-sm" type="button" onClick={handlePrevStep}>
                   Back
                 </button>
               )}
               {step < 3 ? (
-                <button className="button button-primary button-block" type="button" onClick={handleNextStep}>
+                <button className="button button-primary button-block rounded-full px-3 py-2 text-sm" type="button" onClick={handleNextStep}>
                   Continue
                 </button>
               ) : (
                 <button
                   onClick={handlePlaceOrder}
                   disabled={isProcessing || cartItems.length === 0}
-                  className="button button-primary button-block"
+                  className="button button-primary button-block rounded-full px-3 py-2 text-sm"
                 >
                   {isProcessing ? 'Processing...' : 'Place Order'}
                 </button>
               )}
-              <Link className="button button-ghost button-block" href="/cart">
+              <Link className="button button-ghost button-block rounded-full px-3 py-2 text-sm" href="/cart">
                 Back to Cart
               </Link>
             </div>
