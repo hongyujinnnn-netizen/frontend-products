@@ -1,8 +1,11 @@
 export interface Review {
-  id: string;
+  id: number | string;
   productId: number;
-  author: string;
   rating: number;
+  title: string;
   comment: string;
   createdAt: string;
+  reviewerName: string;
+  verifiedPurchase: boolean;
+  helpfulCount?: number;
 }

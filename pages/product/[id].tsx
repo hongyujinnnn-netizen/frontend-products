@@ -11,7 +11,7 @@ import { addToCart } from '../../utils/cart';
 import { isInWishlist, toggleWishlist } from '../../utils/wishlist';
 import { useMessage } from '../../hooks/useMessage';
 import type { Review } from '../../types/review';
-import { addReview, getReviews } from '../../utils/reviews';
+import { createProductReview, getProductReviewSummary, listProductReviews, type ReviewSort } from '../../services/reviews';
 
 const placeholderHighlights = ['Premium materials built for daily use', 'Fast fulfillment with end-to-end tracking', 'Seamless integration with your existing checkout'];
 
@@ -71,13 +71,21 @@ const ProductDetailPage: NextPage = () => {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewSummaryAverage, setReviewSummaryAverage] = useState<number | null>(null);
+  const [reviewSummaryCount, setReviewSummaryCount] = useState<number | null>(null);
+  const [reviewCountsByRating, setReviewCountsByRating] = useState<Record<1 | 2 | 3 | 4 | 5, number> | null>(null);
   const [recentProducts, setRecentProducts] = useState<Product[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<'description' | 'specifications' | 'reviews'>('description');
   const [reviewAuthor, setReviewAuthor] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
   const [reviewComment, setReviewComment] = useState('');
+  const [reviewSort, setReviewSort] = useState<ReviewSort>('newest');
+  const [ratingFilter, setRatingFilter] = useState<0 | 1 | 2 | 3 | 4 | 5>(0);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
   const { showMessage } = useMessage();
 
   useEffect(() => {
@@ -132,9 +140,34 @@ const ProductDetailPage: NextPage = () => {
     }
 
     setIsSaved(isInWishlist(product.id));
-    setReviews(getReviews(product.id));
+    setReviews([]);
+    setReviewSummaryAverage(null);
+    setReviewSummaryCount(null);
+    setReviewCountsByRating(null);
 
     let isMounted = true;
+
+    const loadReviews = async () => {
+      try {
+        const [items, summary] = await Promise.all([
+          listProductReviews(product.id),
+          getProductReviewSummary(product.id),
+        ]);
+        if (!isMounted) return;
+        setReviews(items);
+        setReviewSummaryAverage(summary.averageRating);
+        setReviewSummaryCount(summary.reviewCount);
+        setReviewCountsByRating(summary.countsByRating);
+      } catch {
+        if (!isMounted) return;
+        // If the API isn't available yet, keep an empty list instead of using local storage.
+        setReviews([]);
+      }
+    };
+
+    void loadReviews();
+
+    // reuse isMounted for the related products loader below
 
     const loadRelated = async () => {
       try {
@@ -252,18 +285,55 @@ const ProductDetailPage: NextPage = () => {
   );
 
   const averageRating = useMemo(() => {
+    if (typeof reviewSummaryAverage === 'number') {
+      return reviewSummaryAverage;
+    }
     if (reviews.length === 0) return 0;
     return reviews.reduce((sum, item) => sum + item.rating, 0) / reviews.length;
-  }, [reviews]);
+  }, [reviewSummaryAverage, reviews]);
 
   const ratingBreakdown = useMemo(() => {
+    if (reviewCountsByRating) {
+      const total = (reviewSummaryCount ?? 0) || 1;
+      return [5, 4, 3, 2, 1].map((score) => {
+        const typedScore = score as 1 | 2 | 3 | 4 | 5;
+        const count = reviewCountsByRating[typedScore] ?? 0;
+        const percent = Math.round((count / total) * 100);
+        return { score, count, percent };
+      });
+    }
+
     const total = reviews.length || 1;
     return [5, 4, 3, 2, 1].map((score) => {
       const count = reviews.filter((review) => review.rating === score).length;
       const percent = Math.round((count / total) * 100);
       return { score, count, percent };
     });
-  }, [reviews]);
+  }, [reviewCountsByRating, reviewSummaryCount, reviews]);
+
+  const visibleReviews = useMemo(() => {
+    let next = reviews.slice();
+
+    if (verifiedOnly) {
+      next = next.filter((review) => review.verifiedPurchase);
+    }
+
+    if (ratingFilter > 0) {
+      next = next.filter((review) => review.rating === ratingFilter);
+    }
+
+    next.sort((a, b) => {
+      if (reviewSort === 'highest') {
+        return b.rating - a.rating || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+      if (reviewSort === 'lowest') {
+        return a.rating - b.rating || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return next;
+  }, [ratingFilter, reviewSort, reviews, verifiedOnly]);
 
   const galleryImages = useMemo(() => {
     const urls = [
@@ -331,32 +401,50 @@ const ProductDetailPage: NextPage = () => {
     showMessage('success', added ? 'Saved to wishlist.' : 'Removed from wishlist.');
   };
 
-  const handleReviewSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleReviewSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!product) return;
 
-    const trimmedAuthor = reviewAuthor.trim() || 'Verified buyer';
+    const trimmedAuthor = reviewAuthor.trim();
+    const trimmedTitle = reviewTitle.trim();
     const trimmedComment = reviewComment.trim();
+    if (!trimmedTitle) {
+      showMessage('error', 'Please add a short review title.');
+      return;
+    }
     if (!trimmedComment) {
       showMessage('error', 'Please add a short review comment.');
       return;
     }
 
-    const nextReview: Review = {
-      id: `${product.id}-${Date.now()}`,
-      productId: product.id,
-      author: trimmedAuthor,
-      rating: reviewRating,
-      comment: trimmedComment,
-      createdAt: new Date().toISOString(),
-    };
+    setIsReviewSubmitting(true);
+    try {
+      await createProductReview(product.id, {
+        rating: reviewRating,
+        title: trimmedTitle,
+        comment: trimmedComment,
+        reviewerName: trimmedAuthor || null,
+      });
 
-    addReview(nextReview);
-    setReviews((prev) => [nextReview, ...prev]);
-    setReviewAuthor('');
-    setReviewComment('');
-    setReviewRating(5);
-    showMessage('success', 'Thanks for your feedback.');
+      const [items, summary] = await Promise.all([
+        listProductReviews(product.id),
+        getProductReviewSummary(product.id),
+      ]);
+      setReviews(items);
+      setReviewSummaryAverage(summary.averageRating);
+      setReviewSummaryCount(summary.reviewCount);
+      setReviewCountsByRating(summary.countsByRating);
+
+      setReviewAuthor('');
+      setReviewTitle('');
+      setReviewComment('');
+      setReviewRating(5);
+      showMessage('success', 'Thanks for your feedback. Your review is now pending moderation.');
+    } catch {
+      showMessage('error', 'Unable to submit review. Please sign in and try again.');
+    } finally {
+      setIsReviewSubmitting(false);
+    }
   };
 
   if (isLoading || !product) {
@@ -450,7 +538,7 @@ const ProductDetailPage: NextPage = () => {
                 <div className="product-rating-badge flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm">
                   <span className="rating-stars">{buildStarRow(Math.round(averageRating || 0))}</span>
                   <a href="#product-reviews">
-                    {reviews.length > 0 ? `${averageRating.toFixed(1)} · ${reviews.length} reviews` : 'No reviews yet'}
+                    {(reviewSummaryCount ?? reviews.length) > 0 ? `${averageRating.toFixed(1)} · ${reviewSummaryCount ?? reviews.length} reviews` : 'No reviews yet'}
                   </a>
                 </div>
               </div>
@@ -547,7 +635,7 @@ const ProductDetailPage: NextPage = () => {
             )}
             {activeTab === 'reviews' && (
               <p className="product-description-lead">
-                Rated {reviews.length > 0 ? averageRating.toFixed(1) : '0.0'} out of 5 from {reviews.length} review{reviews.length === 1 ? '' : 's'}.
+                Rated {(reviewSummaryCount ?? reviews.length) > 0 ? averageRating.toFixed(1) : '0.0'} out of 5 from {reviewSummaryCount ?? reviews.length} review{(reviewSummaryCount ?? reviews.length) === 1 ? '' : 's'}.
                 <a href="#product-reviews"> Jump to full reviews.</a>
               </p>
             )}
@@ -624,6 +712,18 @@ const ProductDetailPage: NextPage = () => {
                 </select>
               </div>
               <div className="form-field grid gap-1">
+                <label className="form-label" htmlFor="reviewTitle">Title</label>
+                <input
+                  id="reviewTitle"
+                  className="form-input h-10 rounded-md border border-slate-300 px-3 text-sm focus:border-blue-500 focus:outline-none"
+                  value={reviewTitle}
+                  onChange={(event) => setReviewTitle(event.target.value)}
+                  placeholder="Short summary"
+                  maxLength={120}
+                  required
+                />
+              </div>
+              <div className="form-field grid gap-1">
                 <label className="form-label" htmlFor="reviewComment">Comment</label>
                 <textarea
                   id="reviewComment"
@@ -634,8 +734,8 @@ const ProductDetailPage: NextPage = () => {
                   placeholder="Share what you liked..."
                 />
               </div>
-              <button className="button button-primary rounded-full px-4 py-2 text-sm font-medium" type="submit">
-                Submit review
+              <button className="button button-primary rounded-full px-4 py-2 text-sm font-medium" type="submit" disabled={isReviewSubmitting}>
+                {isReviewSubmitting ? 'Submitting...' : 'Submit review'}
               </button>
             </form>
 
@@ -644,7 +744,7 @@ const ProductDetailPage: NextPage = () => {
                 <div className="review-summary-top">
                   <strong>{reviews.length > 0 ? averageRating.toFixed(1) : '0.0'}</strong>
                   <span>{buildStarRow(Math.round(averageRating || 0))}</span>
-                  <small>{reviews.length} review{reviews.length === 1 ? '' : 's'}</small>
+                  <small>{reviewSummaryCount ?? reviews.length} review{(reviewSummaryCount ?? reviews.length) === 1 ? '' : 's'}</small>
                 </div>
                 <div className="review-bars mt-3 grid gap-2">
                   {ratingBreakdown.map((row) => (
@@ -659,21 +759,73 @@ const ProductDetailPage: NextPage = () => {
                 </div>
               </div>
 
-              {reviews.length === 0 ? (
+              <div className="review-toolbar flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="text-sm text-slate-600">
+                    Sort
+                    <select
+                      className="ml-2 h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+                      value={reviewSort}
+                      onChange={(event) => setReviewSort(event.target.value as ReviewSort)}
+                    >
+                      <option value="newest">Newest</option>
+                      <option value="highest">Highest rating</option>
+                      <option value="lowest">Lowest rating</option>
+                    </select>
+                  </label>
+
+                  <label className="text-sm text-slate-600">
+                    Rating
+                    <select
+                      className="ml-2 h-9 rounded-md border border-slate-300 bg-white px-2 text-sm"
+                      value={ratingFilter}
+                      onChange={(event) => setRatingFilter(Number(event.target.value) as typeof ratingFilter)}
+                    >
+                      <option value={0}>All</option>
+                      {[5, 4, 3, 2, 1].map((value) => (
+                        <option key={value} value={value}>
+                          {value} stars
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+                    <input
+                      type="checkbox"
+                      checked={verifiedOnly}
+                      onChange={(event) => setVerifiedOnly(event.target.checked)}
+                    />
+                    Verified only
+                  </label>
+                </div>
+
+                <div className="text-sm text-slate-500">
+                  Showing {visibleReviews.length} of {reviews.length}
+                </div>
+              </div>
+
+              {visibleReviews.length === 0 ? (
                 <div className="empty-state rounded-xl border border-slate-200 bg-white p-8 text-center">
-                  <h3>No reviews yet</h3>
-                  <p>Be the first to share your experience.</p>
+                  <h3>{reviews.length === 0 ? 'No reviews yet' : 'No reviews match your filters'}</h3>
+                  <p>{reviews.length === 0 ? 'Be the first to share your experience.' : 'Try changing sorting or filters above.'}</p>
                 </div>
               ) : (
-                reviews.map((review) => (
+                visibleReviews.map((review) => (
                   <div key={review.id} className="review-card rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div className="review-header mb-3 flex items-start justify-between gap-3">
                       <div className="review-author-block flex items-start gap-3">
-                        <span className="review-avatar inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white" aria-hidden="true">{getInitials(review.author)}</span>
+                        <span className="review-avatar inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white" aria-hidden="true">
+                          {getInitials(review.reviewerName)}
+                        </span>
                         <div>
-                          <strong>{review.author}</strong>
+                          <strong>{review.reviewerName}</strong>
                           <div className="review-meta-row flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                            <span className="review-verified inline-flex rounded-full bg-emerald-100 px-2 py-0.5 font-medium text-emerald-700">Verified buyer</span>
+                            {review.verifiedPurchase && (
+                              <span className="review-verified inline-flex rounded-full bg-emerald-100 px-2 py-0.5 font-medium text-emerald-700">
+                                Verified purchase
+                              </span>
+                            )}
                             <span>{new Date(review.createdAt).toLocaleDateString()}</span>
                             <span>{getRelativeTimeLabel(review.createdAt)}</span>
                           </div>
@@ -681,7 +833,10 @@ const ProductDetailPage: NextPage = () => {
                       </div>
                       <span className="review-score">{buildStarRow(review.rating)}</span>
                     </div>
-                    <p>{review.comment}</p>
+                    <div className="grid gap-2">
+                      <strong className="text-sm">{review.title}</strong>
+                      <p>{review.comment}</p>
+                    </div>
                   </div>
                 ))
               )}
