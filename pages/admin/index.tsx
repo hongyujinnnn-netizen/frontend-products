@@ -153,14 +153,14 @@ const AdminPage: NextPage = () => {
 
   const pendingOrdersCount = useMemo(() => orders.filter((order) => getOrderStatus(order) === 'PENDING').length, [orders]);
   const hasOrders = orders.length > 0;
-  const watchedName = watch('name');
-  const watchedDescription = watch('description');
-  const watchedTags = watch('tags');
-  const watchedFeatures = watch('features');
-  const watchedCategories = watch('categories');
-  const watchedPrice = watch('price');
-  const watchedStock = watch('stock');
-  const watchedImageUrl = watch('imageUrl');
+  const watchedName = watch('name') ?? '';
+  const watchedDescription = watch('description') ?? '';
+  const watchedTags = watch('tags') ?? '';
+  const watchedFeatures = watch('features') ?? '';
+  const watchedCategories = watch('categories') ?? '';
+  const watchedPrice = watch('price') ?? '';
+  const watchedStock = watch('stock') ?? '';
+  const watchedImageUrl = watch('imageUrl') ?? '';
 
   useEffect(() => {
     void loadProducts();

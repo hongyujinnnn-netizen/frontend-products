@@ -113,7 +113,7 @@ export function getProductMetadata(product: {
     title: `${product.name} | ${config.site.name}`,
     description: product.description || `Buy ${product.name} at ${config.site.name}`,
     canonical: `${config.site.url}/product/${product.id}`,
-    ogImage: product.imageUrl,
+    ogImage: product.imageUrl ?? undefined,
     ogType: 'product',
   };
 }
