@@ -74,7 +74,6 @@ const ProductDetailPage: NextPage = () => {
   const [reviewSummaryAverage, setReviewSummaryAverage] = useState<number | null>(null);
   const [reviewSummaryCount, setReviewSummaryCount] = useState<number | null>(null);
   const [reviewCountsByRating, setReviewCountsByRating] = useState<Record<1 | 2 | 3 | 4 | 5, number> | null>(null);
-  const [recentProducts, setRecentProducts] = useState<Product[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<'description' | 'specifications' | 'reviews'>('description');
@@ -201,24 +200,9 @@ const ProductDetailPage: NextPage = () => {
 
         setRelatedProducts(filtered.slice(0, 4));
 
-        if (typeof window !== 'undefined') {
-          const storageKey = 'recentlyViewedProducts';
-          const current = Number(product.id);
-          const previous = JSON.parse(window.localStorage.getItem(storageKey) ?? '[]') as number[];
-          const nextIds = [current, ...previous.filter((id) => id !== current)].slice(0, 10);
-          window.localStorage.setItem(storageKey, JSON.stringify(nextIds));
-
-          const recent = nextIds
-            .filter((id) => id !== current)
-            .map((id) => data.find((item) => item.id === id))
-            .filter((item): item is Product => Boolean(item))
-            .slice(0, 4);
-          setRecentProducts(recent);
-        }
       } catch {
         if (isMounted) {
           setRelatedProducts([]);
-          setRecentProducts([]);
         }
       }
     };
@@ -653,22 +637,6 @@ const ProductDetailPage: NextPage = () => {
             <div className="product-grid">
               {relatedProducts.map((related) => (
                 <ProductCard key={related.id} product={related} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {recentProducts.length > 0 && (
-          <section className="section-spaced mt-10">
-            <div className="section-title mb-4">
-              <div>
-                <h2>Recently viewed</h2>
-                <p className="section-subtitle">Continue where you left off.</p>
-              </div>
-            </div>
-            <div className="product-grid grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {recentProducts.map((recent) => (
-                <ProductCard key={recent.id} product={recent} />
               ))}
             </div>
           </section>

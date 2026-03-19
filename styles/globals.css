@@ -983,6 +983,10 @@ main.layout {
 }
 
 @media (max-width: 900px) {
+  .navbar {
+    top: 0;
+  }
+
   .nav-toggle {
     display: inline-flex;
   }
@@ -999,6 +1003,10 @@ main.layout {
 
   .nav-brand {
     width: 100%;
+  }
+
+  .nav-brand-actions {
+    margin-left: auto;
   }
 
   .nav-search {
@@ -1043,6 +1051,7 @@ main.layout {
     pointer-events: none;
     transform: translateY(-6px);
     overflow: hidden;
+    padding-top: 0;
     transition: max-height 0.3s ease, opacity 0.25s ease, transform 0.25s ease;
   }
 
@@ -1051,6 +1060,7 @@ main.layout {
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0);
+    padding-top: 0.75rem;
   }
 
   .nav-link {
@@ -1058,11 +1068,16 @@ main.layout {
     min-height: 44px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 0.95rem;
+    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.82);
   }
 
   .nav-actions {
     width: 100%;
     justify-content: flex-start;
+    padding-top: 0.35rem;
   }
 
   .nav-profile {
@@ -1072,6 +1087,28 @@ main.layout {
 }
 
 @media (max-width: 600px) {
+  .navbar-inner {
+    padding: 0.9rem 1rem;
+    gap: 0.85rem;
+  }
+
+  .logo {
+    font-size: 1.15rem;
+  }
+
+  .nav-brand {
+    gap: 0.75rem;
+  }
+
+  .nav-brand-actions {
+    gap: 0.4rem;
+  }
+
+  .nav-search,
+  .nav-search-mobile {
+    border-radius: 1rem;
+  }
+
   .nav-search {
     padding: 0.35rem 0.45rem 0.35rem 0.75rem;
   }
@@ -1083,6 +1120,19 @@ main.layout {
   .nav-search-button {
     padding: 0.45rem 0.8rem;
     font-size: 0.85rem;
+  }
+
+  .nav-link {
+    border-radius: 1rem;
+  }
+
+  .nav-profile {
+    border-radius: 1rem;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .nav-profile-name {
+    font-size: 0.78rem;
   }
 }
 
@@ -1473,9 +1523,37 @@ main.layout {
 }
 
 @media (max-width: 640px) {
+  .product-card {
+    gap: 0.9rem;
+    padding: 1rem;
+    border-radius: 1.1rem;
+  }
+
+  .product-card-image {
+    height: 180px;
+  }
+
+  .product-card-flag {
+    top: 0.75rem;
+    left: 0.75rem;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.68rem;
+  }
+
+  .product-card-title {
+    font-size: 1.05rem;
+    line-height: 1.3;
+  }
+
+  .product-card-description {
+    font-size: 0.88rem;
+    -webkit-line-clamp: 3;
+  }
+
   .product-card-meta {
     flex-direction: column;
     align-items: flex-start;
+    gap: 0.35rem;
   }
 
   .product-card-actions {
@@ -1486,8 +1564,9 @@ main.layout {
 
   .product-card-actions .button {
     width: 100%;
-    font-size: 0.8rem;
-    padding: 0.45rem 0.9rem;
+    min-height: 44px;
+    font-size: 0.84rem;
+    padding: 0.6rem 0.9rem;
   }
 }
 
