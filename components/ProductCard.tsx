@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/router';
 import type { Product } from '../types/product';
 import { addToCart } from '../utils/cart';
 import { useMessage } from '../hooks/useMessage';
+import { useAuth } from '../context/AuthContext';
 
 interface ProductCardProps {
   product: Product;
@@ -39,6 +41,8 @@ const buildFlagLabel = (stock: number, tags: string[]) => {
 const ProductCard = ({ product }: ProductCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const { showMessage } = useMessage();
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
   const tagTokens = (product.tags ?? '')
     .split(',')
     .map((token) => token.trim())
@@ -58,6 +62,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
   
   const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      showMessage('error', 'Please sign in before adding items to your cart');
+      void router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
+      return;
+    }
+
     if (product.stock <= 0) {
       showMessage('error', 'This product is out of stock');
       return;

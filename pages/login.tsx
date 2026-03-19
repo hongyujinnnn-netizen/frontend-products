@@ -69,7 +69,11 @@ const LoginPage: NextPage = () => {
 
     try {
       await signIn(formData.username, formData.password);
-      void router.push('/', undefined, { scroll: true });
+      const redirectTarget =
+        typeof router.query.redirect === 'string' && router.query.redirect.startsWith('/')
+          ? router.query.redirect
+          : '/';
+      void router.push(redirectTarget, undefined, { scroll: true });
     } catch (err) {
       // Handle specific error types
       if (err instanceof Error) {

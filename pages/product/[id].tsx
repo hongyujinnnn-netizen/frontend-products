@@ -10,6 +10,7 @@ import ProductCard from '../../components/ProductCard';
 import { addToCart } from '../../utils/cart';
 import { isInWishlist, toggleWishlist } from '../../utils/wishlist';
 import { useMessage } from '../../hooks/useMessage';
+import { useAuth } from '../../context/AuthContext';
 import type { Review } from '../../types/review';
 import { createProductReview, getProductReviewSummary, listProductReviews, type ReviewSort } from '../../services/reviews';
 
@@ -86,6 +87,7 @@ const ProductDetailPage: NextPage = () => {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
   const { showMessage } = useMessage();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (typeof id !== 'string') {
@@ -344,6 +346,12 @@ const ProductDetailPage: NextPage = () => {
 
   const handleAddToCart = async () => {
     if (!product) return;
+
+    if (!isAuthenticated) {
+      showMessage('error', 'Please sign in before adding items to your cart');
+      await router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
+      return;
+    }
     
     if (product.stock <= 0) {
       showMessage('error', 'This product is out of stock');
@@ -364,6 +372,11 @@ const ProductDetailPage: NextPage = () => {
 
   const handleBuyNow = async () => {
     if (!product) return;
+    if (!isAuthenticated) {
+      showMessage('error', 'Please sign in before continuing to checkout');
+      await router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
+      return;
+    }
     if (product.stock <= 0) {
       showMessage('error', 'This product is out of stock');
       return;
