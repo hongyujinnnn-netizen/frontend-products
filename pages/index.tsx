@@ -120,19 +120,17 @@ const HomePage: NextPage = () => {
           </div>
           <div className="hero-visual">
             <div className="hero-visual-frame">
+              {featured?.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={featured.imageUrl} alt={featured.name} className="hero-featured-image" />
+              ) : (
+                <div className="hero-featured-placeholder">{featured?.name?.charAt(0) ?? 'S'}</div>
+              )}
               {featured && (
-                <>
-                  {featured.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={featured.imageUrl} alt={featured.name} className="hero-featured-image" />
-                  ) : (
-                    <div className="hero-featured-placeholder">{featured.name?.charAt(0) ?? 'S'}</div>
-                  )}
-                  <div className="hero-price-tag">
-                    <span className="hero-price-tag-label">From</span>
-                    <strong>{formatCurrency(featured.price)}</strong>
-                  </div>
-                </>
+                <div className="hero-price-tag">
+                  <span className="hero-price-tag-label">From</span>
+                  <strong>{formatCurrency(featured.price)}</strong>
+                </div>
               )}
             </div>
           </div>
