@@ -1,52 +1,34 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { NextPage } from 'next';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import ProductCard from '../components/ProductCard';
+import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import { Seo } from '../components/Seo';
 import { getDefaultMetadata } from '../lib/seoMetadata';
 import { useProducts } from '../hooks/useProducts';
+import { useMessage } from '../hooks/useMessage';
+import { formatCurrency } from '../utils/format';
 
-const curatedCollections = [
-  {
-    title: 'Bestsellers',
-    description: 'Most loved products',
-  },
-  {
-    title: 'New arrivals',
-    description: 'Just in stock',
-  },
-  {
-    title: 'Limited edition',
-    description: 'Exclusive items',
-  },
+type FilterKey = 'all' | 'new' | 'sale' | 'top' | 'instock';
+
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'new', label: 'New' },
+  { key: 'sale', label: 'Sale' },
+  { key: 'top', label: 'Top rated' },
+  { key: 'instock', label: 'In stock' },
 ];
 
-const testimonials = [
-  {
-    quote: 'Best shopping experience ever!',
-    author: 'Sarah Johnson',
-    role: 'Verified buyer',
-    rating: 5,
-  },
-  {
-    quote: 'Quality and fast shipping. Highly recommend!',
-    author: 'Michael Chen',
-    role: 'Verified buyer',
-    rating: 5,
-  },
-  {
-    quote: 'Exceeded my expectations. Will shop again!',
-    author: 'Emma Rodriguez',
-    role: 'Verified buyer',
-    rating: 5,
-  },
-];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 const HomePage: NextPage = () => {
   const { products, loading, error, loadProducts } = useProducts();
   const router = useRouter();
+  const { showMessage } = useMessage();
   const [page, setPage] = useState(1);
+  const [filter, setFilter] = useState<FilterKey>('all');
+  const [email, setEmail] = useState('');
   const pageSize = 6;
 
   useEffect(() => {
@@ -55,92 +37,151 @@ const HomePage: NextPage = () => {
 
   const searchTerm = useMemo(
     () => (typeof router.query.search === 'string' ? router.query.search : ''),
-    [router.query.search]
+    [router.query.search],
   );
 
   const filteredProducts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-
-    if (!term) {
-      return products;
-    }
-
     return products.filter((product) => {
-      const haystack = `${product.name} ${product.description ?? ''}`.toLowerCase();
-      return haystack.includes(term);
+      if (term) {
+        const haystack = `${product.name} ${product.description ?? ''}`.toLowerCase();
+        if (!haystack.includes(term)) return false;
+      }
+      const tags = (product.tags ?? '').toLowerCase();
+      if (filter === 'new' && !tags.includes('new')) return false;
+      if (filter === 'sale' && !tags.includes('sale') && !tags.includes('discount')) return false;
+      if (filter === 'top' && !tags.includes('top')) return false;
+      if (filter === 'instock' && product.stock <= 0) return false;
+      return true;
     });
-  }, [products, searchTerm]);
+  }, [products, searchTerm, filter]);
 
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, products.length]);
+  }, [searchTerm, filter, products.length]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
   const displayedProducts = filteredProducts.slice((page - 1) * pageSize, page * pageSize);
   const metadata = getDefaultMetadata();
   const isEmpty = !loading && !error && filteredProducts.length === 0;
+  const featured = products[0];
+  const month = MONTHS[new Date().getMonth()];
+
+  const handleNewsletter = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    showMessage('success', 'Thanks! Check your inbox for the welcome offer.');
+    setEmail('');
+  };
 
   return (
     <>
       <Seo metadata={metadata} />
-      <main className="layout">
-        <section className="hero">
-          <span className="badge">Welcome to ShopLite</span>
-          <h1 className="hero-title">Premium shopping experience</h1>
-          <p className="hero-lede">
-            Discover quality products with fast shipping and exceptional service
-          </p>
-          <div className="actions">
-            <Link className="button button-primary" href="/product/featured">
-              Shop now
-            </Link>
-            <Link className="button button-ghost" href="/search">
-              Browse all
-            </Link>
-          </div>
-        </section>
-        <section className="highlight-grid section-spaced">
-          {curatedCollections.map((collection) => (
-            <article className="highlight-card" key={collection.title}>
-              <h3>{collection.title}</h3>
-              <p>{collection.description}</p>
-              <Link className="button button-ghost" href="/product/featured">
-                Explore
+      <main className="layout home-layout">
+        <section className="hero-v2">
+          <div className="hero-content">
+            <span className="hero-badge">
+              <span className="hero-badge-dot" />
+              New collection — {month}
+            </span>
+            <h1 className="hero-title-v2">
+              Curated essentials,
+              <br />
+              thoughtfully made.
+            </h1>
+            <p className="hero-subhead">
+              Premium products with fast shipping, easy returns, and a story behind every piece.
+            </p>
+            <div className="hero-cta">
+              <Link className="btn btn-primary" href="/search">
+                Shop now
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14M13 5l7 7-7 7" />
+                </svg>
               </Link>
-            </article>
-          ))}
+              <Link className="btn btn-outline" href="/product/featured">
+                Browse catalog
+              </Link>
+            </div>
+            <ul className="hero-trust">
+              <li>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                Free shipping
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                30-day returns
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1v-6h3zM3 19a2 2 0 0 0 2 2h1v-6H3z"/></svg>
+                24/7 support
+              </li>
+            </ul>
+          </div>
+          <div className="hero-visual">
+            <div className="hero-visual-frame">
+              {featured && (
+                <>
+                  {featured.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={featured.imageUrl} alt={featured.name} className="hero-featured-image" />
+                  ) : (
+                    <div className="hero-featured-placeholder">{featured.name?.charAt(0) ?? 'S'}</div>
+                  )}
+                  <div className="hero-price-tag">
+                    <span className="hero-price-tag-label">From</span>
+                    <strong>{formatCurrency(featured.price)}</strong>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </section>
 
         <div className="section-title section-spaced">
           <div>
             <h2>Featured products</h2>
-            <p className="section-subtitle">
-              Bestsellers & customer favorites
-            </p>
+            <p className="section-subtitle">Bestsellers &amp; customer favorites</p>
           </div>
-          <Link className="button button-ghost" href="/product/featured">
-            Browse all
-          </Link>
         </div>
 
+        <div className="filter-pills">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              className={`filter-pill ${filter === f.key ? 'is-active' : ''}`}
+              onClick={() => setFilter(f.key)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
 
         {error ? (
-          <div className="empty-state" role="alert">
-            <h2>{error.includes('No products') ? 'No products available' : 'Error loading products'}</h2>
+          <div className="empty-card" role="alert">
+            <div className="empty-card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <h3>Error loading products</h3>
             <p>{error}</p>
-            <Link className="button button-primary" href="/">
+            <button className="btn btn-primary" type="button" onClick={() => void loadProducts()}>
               Try again
-            </Link>
+            </button>
           </div>
         ) : loading ? (
-          <div className="empty-state">
-            <h2>Loading products</h2>
-            <p>Fetching the latest items...</p>
-          </div>
+          <section className="product-grid">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </section>
         ) : isEmpty ? (
-          <div className="empty-state">
-            <h2>No products found</h2>
-            <p>Check back soon for amazing items</p>
+          <div className="empty-card">
+            <div className="empty-card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            <h3>No products found</h3>
+            <p>Try a different filter or check back soon.</p>
           </div>
         ) : (
           <>
@@ -151,23 +192,11 @@ const HomePage: NextPage = () => {
             </section>
             {totalPages > 1 && (
               <div className="pagination">
-                <button
-                  className="button button-ghost"
-                  type="button"
-                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  disabled={page === 1}
-                >
+                <button className="btn btn-outline" type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
                   Previous
                 </button>
-                <span className="form-hint">
-                  Page {page} of {totalPages}
-                </span>
-                <button
-                  className="button button-ghost"
-                  type="button"
-                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={page === totalPages}
-                >
+                <span className="form-hint">Page {page} of {totalPages}</span>
+                <button className="btn btn-outline" type="button" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
                   Next
                 </button>
               </div>
@@ -175,35 +204,25 @@ const HomePage: NextPage = () => {
           </>
         )}
 
-        <section className="testimonial-section section-spaced">
-          <div className="section-title">
-            <div>
-            <h2>Loved by our customers</h2>
-              <p className="section-subtitle">See what real shoppers think</p>
-            </div>
+        <section className="newsletter-band section-spaced">
+          <div className="newsletter-band-text">
+            <span className="newsletter-eyebrow">JOIN THE CLUB</span>
+            <h2 className="newsletter-headline">Get 10% off your first order</h2>
+            <p className="newsletter-sub">Join our list and we&apos;ll send you exclusive drops and member-only sales.</p>
           </div>
-          <div className="testimonial-grid">
-            {testimonials.map((testimonial) => (
-              <figure className="testimonial-card" key={testimonial.author}>
-                <div className="testimonial-rating">
-                  Rating: {testimonial.rating}/5
-                </div>
-                <blockquote className="testimonial-quote">{testimonial.quote}</blockquote>
-                <figcaption className="testimonial-author">
-                  <span>{testimonial.author}</span>
-                  <span>{testimonial.role}</span>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </section>
-
-        <section className="cta-section section-spaced">
-          <h2>Ready to find your next favorite?</h2>
-          <p>Browse our curated collection of premium products</p>
-          <Link className="button button-primary button-large" href="/product/featured">
-            Start shopping today
-          </Link>
+          <form className="newsletter-form" onSubmit={handleNewsletter}>
+            <input
+              type="email"
+              className="newsletter-input"
+              placeholder="you@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <button type="submit" className="btn btn-light">
+              Subscribe
+            </button>
+          </form>
         </section>
       </main>
     </>

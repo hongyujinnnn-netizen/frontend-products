@@ -1,32 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { NextPage } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useMessage } from '../hooks/useMessage';
 import { useOrders } from '../hooks/useOrders';
-import { getCartItems, removeFromCart, clearCart, updateCartQuantity } from '../utils/cart';
-import type { CartItem } from '../types/product';
+import { useCart } from '../context/CartContext';
 import ProtectedRoute from '../components/ProtectedRoute';
-
-interface CartItemWithLocal extends CartItem {
-  quantity: number;
-}
+import { formatCurrency } from '../utils/format';
 
 const CartPage: NextPage = () => {
-  const [cartItems, setCartItems] = useState<CartItemWithLocal[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { showMessage } = useMessage();
   const { checkout } = useOrders();
-
-  // Load cart items on mount
-  useEffect(() => {
-    const items = getCartItems();
-    setCartItems(items as CartItemWithLocal[]);
-  }, []);
+  const { items: cartItems, total, itemCount: totalItems, removeItem, updateQuantity, clear } = useCart();
 
   const handleRemove = (productId: number) => {
-    removeFromCart(productId);
-    setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
+    removeItem(productId);
     showMessage('success', 'Item removed from cart');
   };
 
@@ -42,12 +31,7 @@ const CartPage: NextPage = () => {
     if (quantity > maxQuantity) {
       showMessage('error', `Only ${maxQuantity} in stock for ${item.product.name}`);
     }
-    updateCartQuantity(productId, safeQuantity);
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity: safeQuantity } : item
-      )
-    );
+    updateQuantity(productId, safeQuantity);
   };
 
   const handleCheckout = async () => {
@@ -67,10 +51,8 @@ const CartPage: NextPage = () => {
         quantity: item.quantity,
       }));
       await checkout(orderItems);
-      clearCart();
-      setCartItems([]);
+      clear();
       showMessage('success', 'Order placed successfully!');
-      // Stay on cart page after checkout
     } catch (err) {
       console.error('Checkout failed:', err);
     } finally {
@@ -78,12 +60,6 @@ const CartPage: NextPage = () => {
     }
   };
 
-  const total = cartItems.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0
-  );
-
-  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const freeShippingThreshold = 100;
   const shipping = total >= freeShippingThreshold ? 0 : 9;
   const tax = total * 0.08;
@@ -91,12 +67,11 @@ const CartPage: NextPage = () => {
   const progressPercent = Math.min(100, (total / freeShippingThreshold) * 100);
 
   const handleClearCart = () => {
-    clearCart();
-    setCartItems([]);
+    clear();
     showMessage('success', 'Cart cleared');
   };
 
-  const formatMoney = (value: number) => `$${value.toFixed(2)}`;
+  const formatMoney = formatCurrency;
 
   return (
     <ProtectedRoute>

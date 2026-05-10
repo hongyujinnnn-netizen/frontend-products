@@ -5,78 +5,59 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import type { Product } from '../types/product';
-import { addToCart } from '../utils/cart';
 import { useMessage } from '../hooks/useMessage';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
+import { formatCurrency } from '../utils/format';
 
 interface ProductCardProps {
   product: Product;
 }
 
-const getTagTone = (tag: string): 'new' | 'top' | 'edition' | 'discount' | 'default' => {
-  const normalized = tag.trim().toLowerCase();
-  if (normalized.includes('new')) return 'new';
-  if (normalized.includes('top')) return 'top';
-  if (normalized.includes('edition')) return 'edition';
-  if (normalized.includes('discount') || normalized.includes('sale')) return 'discount';
-  return 'default';
+const pickBadge = (product: Product): { label: string; tone: string } | null => {
+  const tags = (product.tags ?? '').toLowerCase();
+  if (product.stock > 0 && product.stock <= 5) return { label: 'LOW', tone: 'warning' };
+  if (tags.includes('sale') || tags.includes('discount')) return { label: 'SALE', tone: 'danger' };
+  if (tags.includes('new')) return { label: 'NEW', tone: 'accent' };
+  if (tags.includes('top')) return { label: 'TOP', tone: 'primary' };
+  return null;
 };
 
-const buildFlagLabel = (stock: number, tags: string[]) => {
-  if (stock <= 0) {
-    return 'Out of stock';
-  }
-
-  if (stock < 4) {
-    return 'Low stock';
-  }
-
-  if (tags.length > 0) {
-    return `${tags[0]}`;
-  }
-
-  return 'FEATURED';
+const getCategory = (product: Product): string => {
+  const first = (product.categories ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)[0];
+  return first ?? 'Featured';
 };
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const { showMessage } = useMessage();
   const { isAuthenticated } = useAuth();
+  const { addItem } = useCart();
   const router = useRouter();
-  const tagTokens = (product.tags ?? '')
-    .split(',')
-    .map((token) => token.trim())
-    .filter(Boolean)
-    .slice(0, 3);
-  const primaryTagTone = getTagTone(tagTokens[0] ?? '');
-  
-  const flagLabel = buildFlagLabel(product.stock ?? 0, tagTokens);
-  const flagClass =
-    product.stock <= 0
-      ? 'product-card-flag-empty'
-      : product.stock < 4
-        ? 'product-card-flag-low'
-        : `product-card-flag-featured product-card-flag-tag-${primaryTagTone}`;
 
-  const imageUrl = product.imageUrl ?? 'https://via.placeholder.com/480x320?text=Product';
-  
+  const badge = pickBadge(product);
+  const imageUrl = product.imageUrl ?? '/product-placeholder.svg';
+  const category = getCategory(product);
+
   const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!isAuthenticated) {
       showMessage('error', 'Please sign in before adding items to your cart');
       void router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
       return;
     }
-
     if (product.stock <= 0) {
       showMessage('error', 'This product is out of stock');
       return;
     }
-    
     setIsAdding(true);
     try {
-      addToCart(product, 1);
-      showMessage('success', `${product.name} added to cart (${product.price})`);
+      addItem(product, 1);
+      showMessage('success', `${product.name} added to cart (${formatCurrency(product.price)})`);
     } catch {
       showMessage('error', 'Failed to add item to cart');
     } finally {
@@ -85,53 +66,56 @@ const ProductCard = ({ product }: ProductCardProps) => {
   };
 
   return (
-    <article className="product-card">
-      <Link className="product-card-media" href={`/product/${product.id}`}>
-        <Image
-          alt={product.name}
-          className="product-card-image"
-          src={imageUrl}
-          width={480}
-          height={320}
-          priority={false}
-        />
-        <span className={`product-card-flag ${flagClass}`}>{flagLabel}</span>
-      </Link>
-      <div className="product-card-body">
-        <h2 className="product-card-title">{product.name}</h2>
-        <p className="product-card-description">
-          {product.description ?? 'Product description coming soon. Connect your API payload for richer copy.'}
-        </p>
-        {tagTokens.length > 0 && (
-          <div className="product-preview-categories">
-            {tagTokens.map((tag) => (
-              <span key={tag} className={`preview-category-chip product-tag-chip product-tag-${getTagTone(tag)}`}>
-                {tag}
-              </span>
-            ))}
+    <Link className="product-card-link" href={`/product/${product.id}`}>
+      <article className="product-card-v2">
+        <div className="product-card-v2-media">
+          <Image
+            alt={product.name}
+            className="product-card-v2-image"
+            src={imageUrl}
+            width={480}
+            height={480}
+            priority={false}
+          />
+          {badge && <span className={`product-card-v2-badge tone-${badge.tone}`}>{badge.label}</span>}
+          <button
+            type="button"
+            className="product-card-v2-wishlist"
+            aria-label="Save to wishlist"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </button>
+        </div>
+        <div className="product-card-v2-body">
+          <span className="product-card-v2-eyebrow">{category}</span>
+          <h3 className="product-card-v2-title">{product.name}</h3>
+          <div className="product-card-v2-rating">
+            <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M12 .587l3.668 7.431L24 9.748l-6 5.847 1.416 8.252L12 19.771l-7.416 4.076L6 15.595 0 9.748l8.332-1.73z"/></svg>
+            <span>4.8 · 248 reviews</span>
           </div>
-        )}
-      </div>
-      <div className="product-card-meta">
-        <span className="product-card-price">${product.price.toFixed(2)}</span>
-        <span className={`product-card-stock ${product.stock <= 0 ? 'is-empty' : ''}`}>
-          {product.stock > 0 ? `${product.stock} in stock` : 'Currently unavailable'}
-        </span>
-      </div>
-      <div className="product-card-actions">
-        <Link className="button button-primary" href={`/product/${product.id}`}>
-          View details
-        </Link>
-        <button 
-          className="button button-ghost" 
-          type="button"
-          onClick={handleAddToCart}
-          disabled={isAdding || product.stock <= 0}
-        >
-          {isAdding ? 'Adding...' : 'Add to cart'}
-        </button>
-      </div>
-    </article>
+        </div>
+        <div className="product-card-v2-footer">
+          <span className="product-card-v2-price">{formatCurrency(product.price)}</span>
+          <button
+            type="button"
+            className="product-card-v2-add"
+            aria-label={`Add ${product.name} to cart`}
+            onClick={handleAddToCart}
+            disabled={isAdding || product.stock <= 0}
+          >
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </button>
+        </div>
+      </article>
+    </Link>
   );
 };
 

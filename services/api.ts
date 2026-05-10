@@ -27,11 +27,12 @@ export const apiFetch = async <T>(path: string, options: RequestInit = {}): Prom
       ...options.headers,
     };
 
-    // Debug logging
-    console.log(`[API] ${options.method || 'GET'} ${API_BASE_URL}${path}`, {
-      hasToken: !!token,
-      tokenLength: token?.length,
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[API] ${options.method || 'GET'} ${API_BASE_URL}${path}`, {
+        hasToken: !!token,
+        tokenLength: token?.length,
+      });
+    }
 
     const response = await fetch(`${API_BASE_URL}${path}`, {
       headers,

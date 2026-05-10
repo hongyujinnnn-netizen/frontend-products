@@ -1,25 +1,26 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import type { NextPage } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import CustomerControlPanel from '../../components/admin/CustomerControlPanel';
+import ReviewsTab from '../../components/admin/ReviewsTab';
 import { useProducts } from '../../hooks/useProducts';
 import { useUsers } from '../../hooks/useUsers';
 import { useOrders } from '../../hooks/useOrders';
 import { useMessage } from '../../hooks/useMessage';
 import { productFormSchema, type ProductFormData } from '../../lib/validationSchemas';
 import type { Order } from '../../types/order';
-import { listAdminReviews, moderateReview, type AdminReview, type ReviewStatus } from '../../services/reviews';
+import { formatCurrency } from '../../utils/format';
 
 const navItems = [
-  { label: 'Dashboard', icon: '📊', target: 'dashboard' },
-  { label: 'Products',  icon: '📦', target: 'products' },
-  { label: 'Orders',    icon: '🧾', target: 'orders' },
-  { label: 'Customers', icon: '👥', target: 'customers' },
-  { label: 'Reviews',   icon: '⭐', target: 'reviews' },
+  { label: 'Dashboard', icon: 'ðŸ“Š', target: 'dashboard' },
+  { label: 'Products',  icon: 'ðŸ“¦', target: 'products' },
+  { label: 'Orders',    icon: 'ðŸ§¾', target: 'orders' },
+  { label: 'Customers', icon: 'ðŸ‘¥', target: 'customers' },
+  { label: 'Reviews',   icon: 'â­', target: 'reviews' },
 ];
 
 const orderStatusColor: Record<string, string> = {
@@ -88,55 +89,13 @@ const AdminPage: NextPage = () => {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [dismissedOrdersNotice, setDismissedOrdersNotice] = useState(false);
 
-  const [adminReviews, setAdminReviews] = useState<AdminReview[]>([]);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [reviewsStatusFilter, setReviewsStatusFilter] = useState<ReviewStatus | 'ALL'>('PENDING');
-  const [reviewsProductFilter, setReviewsProductFilter] = useState<string>('');
-  const [reviewsRatingFilter, setReviewsRatingFilter] = useState<'ALL' | '1' | '2' | '3' | '4' | '5'>('ALL');
-  const [reviewModerationReason, setReviewModerationReason] = useState<Record<string, string>>({});
-  const [reviewWorkingId, setReviewWorkingId] = useState<string | null>(null);
-
-  const loadAdminReviews = async () => {
-    setReviewsLoading(true);
-    try {
-      const productId = Number(reviewsProductFilter);
-      const rating = reviewsRatingFilter === 'ALL' ? undefined : Number(reviewsRatingFilter);
-      const status = reviewsStatusFilter === 'ALL' ? undefined : reviewsStatusFilter;
-      const data = await listAdminReviews({
-        status,
-        productId: Number.isFinite(productId) && productId > 0 ? productId : undefined,
-        rating: typeof rating === 'number' && rating >= 1 && rating <= 5 ? rating : undefined,
-      });
-      setAdminReviews(data);
-    } catch {
-      showMessage('error', 'Unable to load reviews');
-      setAdminReviews([]);
-    } finally {
-      setReviewsLoading(false);
-    }
-  };
-
-  const handleModerateReview = async (review: AdminReview, status: ReviewStatus) => {
-    setReviewWorkingId(String(review.id));
-    try {
-      const reason = (reviewModerationReason[String(review.id)] ?? '').trim();
-      await moderateReview(review.id, { status, reason: reason || null });
-      showMessage('success', `Review ${status.toLowerCase()}`);
-      await loadAdminReviews();
-    } catch {
-      showMessage('error', 'Unable to update review');
-    } finally {
-      setReviewWorkingId(null);
-    }
-  };
-
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
     setValue,
-    watch,
+    control,
   } = useForm<ProductFormData>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
@@ -153,27 +112,32 @@ const AdminPage: NextPage = () => {
 
   const pendingOrdersCount = useMemo(() => orders.filter((order) => getOrderStatus(order) === 'PENDING').length, [orders]);
   const hasOrders = orders.length > 0;
-  const watchedName = watch('name') ?? '';
-  const watchedDescription = watch('description') ?? '';
-  const watchedTags = watch('tags') ?? '';
-  const watchedFeatures = watch('features') ?? '';
-  const watchedCategories = watch('categories') ?? '';
-  const watchedPrice = watch('price') ?? '';
-  const watchedStock = watch('stock') ?? '';
-  const watchedImageUrl = watch('imageUrl') ?? '';
+  const [
+    watchedNameValue,
+    watchedDescriptionValue,
+    watchedTagsValue,
+    watchedFeaturesValue,
+    watchedCategoriesValue,
+    watchedPriceValue,
+    watchedStockValue,
+    watchedImageUrlValue,
+  ] = useWatch({
+    control,
+    name: ['name', 'description', 'tags', 'features', 'categories', 'price', 'stock', 'imageUrl'],
+  });
+  const watchedName = watchedNameValue ?? '';
+  const watchedDescription = watchedDescriptionValue ?? '';
+  const watchedTags = watchedTagsValue ?? '';
+  const watchedFeatures = watchedFeaturesValue ?? '';
+  const watchedCategories = watchedCategoriesValue ?? '';
+  const watchedPrice = watchedPriceValue ?? '';
+  const watchedStock = watchedStockValue ?? '';
+  const watchedImageUrl = watchedImageUrlValue ?? '';
 
   useEffect(() => {
     void loadProducts();
     void loadUsers();
   }, [loadProducts, loadUsers]);
-
-  useEffect(() => {
-    if (activeNav !== 'reviews') {
-      return;
-    }
-    void loadAdminReviews();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeNav]);
 
   useEffect(() => {
     setProductPage(1);
@@ -834,8 +798,8 @@ const AdminPage: NextPage = () => {
                   </article>
                   <article className="admin-card rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="card-label">Total revenue</div>
-                    <div className="card-value">${summary.revenue.toFixed(2)}</div>
-                    <div className="card-foot">${salesToday.total.toFixed(2)} today</div>
+                    <div className="card-value">{formatCurrency(summary.revenue)}</div>
+                    <div className="card-foot">{formatCurrency(salesToday.total)} today</div>
                   </article>
                   <article className="admin-card rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="card-label">Products</div>
@@ -918,7 +882,7 @@ const AdminPage: NextPage = () => {
                                     {getOrderCustomerEmail(order) && <div className="cell-sub">{order.items.length} items</div>}
                                   </td>
                                   <td className="cell-sub">{orderDate}</td>
-                                  <td className="cell-mono">${order.total.toFixed(2)}</td>
+                                  <td className="cell-mono">{formatCurrency(order.total)}</td>
                                   <td>
                                     <span className={`pill ${orderStatusColor[status] ?? 'status-neutral'}`}>
                                       {status}
@@ -995,7 +959,7 @@ const AdminPage: NextPage = () => {
                         </div>
                         <div className="restock-metric">
                           <span className="restock-metric-label">Estimated inventory cost</span>
-                          <strong>${restockPlan.estimatedCost.toFixed(2)}</strong>
+                          <strong>{formatCurrency(restockPlan.estimatedCost)}</strong>
                         </div>
                       </div>
                     </div>
@@ -1014,7 +978,7 @@ const AdminPage: NextPage = () => {
                               <div className="cell-sub">
                                 {product.stock} units left
                                 {parsedRestockTarget && product.stock < parsedRestockTarget
-                                  ? ` • Need +${parsedRestockTarget - product.stock}`
+                                  ? ` â€¢ Need +${parsedRestockTarget - product.stock}`
                                   : ''}
                               </div>
                             </div>
@@ -1054,7 +1018,7 @@ const AdminPage: NextPage = () => {
                             <div className="revenue-bar">
                               <span style={{ width }} />
                             </div>
-                            <span className="cell-mono">${point.total.toFixed(2)}</span>
+                            <span className="cell-mono">{formatCurrency(point.total)}</span>
                           </div>
                         );
                       })}
@@ -1072,7 +1036,7 @@ const AdminPage: NextPage = () => {
                                 <strong>{product.name}</strong>
                                 <p className="form-hint">{product.count} sold</p>
                               </div>
-                              <div className="cell-mono">${product.revenue.toFixed(2)}</div>
+                              <div className="cell-mono">{formatCurrency(product.revenue)}</div>
                             </div>
                           ))}
                         </div>
@@ -1112,7 +1076,7 @@ const AdminPage: NextPage = () => {
                             <div className="customer-leaderboard-metrics">
                               <div>
                                 <span className="metric-label">Spent</span>
-                                <strong>${customer.spent.toFixed(2)}</strong>
+                                <strong>{formatCurrency(customer.spent)}</strong>
                               </div>
                               <div>
                                 <span className="metric-label">Orders</span>
@@ -1161,7 +1125,7 @@ const AdminPage: NextPage = () => {
                     <article className="products-stat-card products-stat-card-total">
                       <div className="products-stat-card-head">
                         <span className="products-stat-card-label">Total products</span>
-                        <span className="products-stat-card-icon">📦</span>
+                        <span className="products-stat-card-icon">ðŸ“¦</span>
                       </div>
                       <strong className="products-stat-card-value">{products.length}</strong>
                       <div className="products-stat-progress"><span style={{ width: `${Math.min(100, Math.max(8, products.length * 4))}%` }} /></div>
@@ -1170,7 +1134,7 @@ const AdminPage: NextPage = () => {
                     <article className={`products-stat-card products-stat-card-low ${filteredLowStockCount > 0 ? 'is-alert' : ''}`}>
                       <div className="products-stat-card-head">
                         <span className="products-stat-card-label">Low stock</span>
-                        <span className="products-stat-card-icon">⚠️</span>
+                        <span className="products-stat-card-icon">âš ï¸</span>
                       </div>
                       <strong className="products-stat-card-value">{filteredLowStockCount}</strong>
                       <div className="products-stat-progress"><span style={{ width: `${Math.min(100, Math.max(8, filteredProducts.length > 0 ? Math.round((filteredLowStockCount / filteredProducts.length) * 100) : 8))}%` }} /></div>
@@ -1179,7 +1143,7 @@ const AdminPage: NextPage = () => {
                     <article className={`products-stat-card products-stat-card-selected ${selectedProductIds.length > 0 ? 'is-selected' : ''}`}>
                       <div className="products-stat-card-head">
                         <span className="products-stat-card-label">Selected</span>
-                        <span className="products-stat-card-icon">✅</span>
+                        <span className="products-stat-card-icon">âœ…</span>
                       </div>
                       <strong className="products-stat-card-value">{selectedProductIds.length}</strong>
                       <div className="products-stat-progress"><span style={{ width: `${Math.min(100, Math.max(8, pagedProducts.length > 0 ? Math.round((selectedProductIds.length / pagedProducts.length) * 100) : 8))}%` }} /></div>
@@ -1303,7 +1267,7 @@ const AdminPage: NextPage = () => {
                               {product.tags && <span className="product-category-badge">{product.tags}</span>}
                             </div>
                             <div className="product-grid-meta">
-                              <strong>${product.price.toFixed(2)}</strong>
+                              <strong>{formatCurrency(product.price)}</strong>
                               <span>{product.stock} units</span>
                             </div>
                             <div className="product-grid-stock-track" aria-label={`Stock level ${stockLevel}%`}>
@@ -1398,7 +1362,7 @@ const AdminPage: NextPage = () => {
                                 <span className="product-category-badge">{product.categories || 'Uncategorized'}</span>
                               </td>
                               <td className="product-price" data-label="Price">
-                                ${product.price.toFixed(2)}
+                                {formatCurrency(product.price)}
                               </td>
                               <td className="cell-sub product-stock" data-label="Stock">
                                 <div className="product-stock-content">
@@ -1606,7 +1570,7 @@ const AdminPage: NextPage = () => {
                             </div>
                           )}
                           <div className="product-preview-meta">
-                            <strong>${previewPrice.toFixed(2)}</strong>
+                            <strong>{formatCurrency(previewPrice)}</strong>
                             <span>{previewStock} units</span>
                           </div>
                           <div className="stock-track" aria-hidden="true">
@@ -1734,7 +1698,7 @@ const AdminPage: NextPage = () => {
                                 {getOrderCustomerEmail(order) && <div className="cell-sub">{order.items.length} items</div>}
                               </td>
                               <td className="cell-sub">{orderDate}</td>
-                              <td className="cell-mono">${order.total.toFixed(2)}</td>
+                              <td className="cell-mono">{formatCurrency(order.total)}</td>
                               <td>
                                 <span className={`pill ${orderStatusColor[status] ?? 'status-neutral'}`}>
                                   {status}
@@ -1789,7 +1753,7 @@ const AdminPage: NextPage = () => {
                           </div>
                           <div>
                             <div className="detail-label">Total</div>
-                            <div className="detail-value">${selectedOrder.total.toFixed(2)}</div>
+                            <div className="detail-value">{formatCurrency(selectedOrder.total)}</div>
                           </div>
                         </div>
                         <div className="order-items">
@@ -1798,11 +1762,11 @@ const AdminPage: NextPage = () => {
                               <div>
                                 <strong>{item.product?.name ?? `Product ${item.product?.id ?? item.id}`}</strong>
                                 <div className="form-hint">
-                                  {item.quantity} x ${item.price.toFixed(2)}
+                                  {item.quantity} x {formatCurrency(item.price)}
                                 </div>
                               </div>
                               <div className="cell-mono">
-                                ${(item.quantity * item.price).toFixed(2)}
+                                {formatCurrency((item.quantity * item.price))}
                               </div>
                             </div>
                           ))}
@@ -1826,155 +1790,7 @@ const AdminPage: NextPage = () => {
               />
             )}
 
-            {activeNav === 'reviews' && (
-              <section className="panel">
-                <div className="panel-header">
-                  <div>
-                    <h3>Reviews moderation</h3>
-                    <p className="form-hint">Approve, reject, or hide reviews. Use filters to focus your queue.</p>
-                  </div>
-                  <button className="button button-ghost" type="button" onClick={() => void loadAdminReviews()} disabled={reviewsLoading}>
-                    {reviewsLoading ? 'Refreshing...' : 'Refresh'}
-                  </button>
-                </div>
-
-                <div className="toolbar compact flex flex-wrap gap-2">
-                  <select
-                    className="toolbar-input h-10 min-w-[180px] rounded-md border border-slate-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none"
-                    value={reviewsStatusFilter}
-                    onChange={(event) => setReviewsStatusFilter(event.target.value as typeof reviewsStatusFilter)}
-                  >
-                    <option value="PENDING">Pending</option>
-                    <option value="APPROVED">Approved</option>
-                    <option value="REJECTED">Rejected</option>
-                    <option value="HIDDEN">Hidden</option>
-                    <option value="ALL">All statuses</option>
-                  </select>
-
-                  <input
-                    className="toolbar-input h-10 min-w-[180px] rounded-md border border-slate-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none"
-                    placeholder="Filter by product ID"
-                    value={reviewsProductFilter}
-                    onChange={(event) => setReviewsProductFilter(event.target.value)}
-                    inputMode="numeric"
-                  />
-
-                  <select
-                    className="toolbar-input h-10 min-w-[160px] rounded-md border border-slate-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none"
-                    value={reviewsRatingFilter}
-                    onChange={(event) => setReviewsRatingFilter(event.target.value as typeof reviewsRatingFilter)}
-                  >
-                    <option value="ALL">All ratings</option>
-                    {[5, 4, 3, 2, 1].map((value) => (
-                      <option key={value} value={String(value)}>
-                        {value} stars
-                      </option>
-                    ))}
-                  </select>
-
-                  <button className="button button-primary" type="button" onClick={() => void loadAdminReviews()} disabled={reviewsLoading}>
-                    Apply filters
-                  </button>
-                </div>
-
-                {reviewsLoading ? (
-                  <div className="table-skeleton">
-                    <div className="skeleton-row" />
-                    <div className="skeleton-row" />
-                    <div className="skeleton-row" />
-                  </div>
-                ) : adminReviews.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-state-icon">⭐</div>
-                    <h3>No reviews</h3>
-                    <p>Try changing filters, or wait for customers to submit reviews.</p>
-                  </div>
-                ) : (
-                  <div className="table-wrapper">
-                    <table className="table table-striped">
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Product</th>
-                          <th>Rating</th>
-                          <th>Reviewer</th>
-                          <th>Date</th>
-                          <th>Status</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {adminReviews.map((review) => {
-                          const working = reviewWorkingId === String(review.id);
-                          return (
-                            <tr key={String(review.id)}>
-                              <td className="cell-mono">#{review.id}</td>
-                              <td className="cell-sub">#{review.productId}</td>
-                              <td>{review.rating} / 5</td>
-                              <td>
-                                <div className="cell-strong">{review.reviewerName}</div>
-                                {review.verifiedPurchase && <span className="pill status-success">Verified</span>}
-                              </td>
-                              <td className="cell-sub">{new Date(review.createdAt).toLocaleDateString()}</td>
-                              <td>
-                                <span className={`pill ${review.status === 'PENDING' ? 'status-warning' : review.status === 'APPROVED' ? 'status-success' : review.status === 'REJECTED' ? 'status-danger' : 'status-neutral'}`}>
-                                  {review.status}
-                                </span>
-                              </td>
-                              <td>
-                                <div className="grid gap-2">
-                                  <input
-                                    className="toolbar-input h-10 min-w-[220px] rounded-md border border-slate-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none"
-                                    placeholder="Moderation reason (optional)"
-                                    value={reviewModerationReason[String(review.id)] ?? ''}
-                                    onChange={(event) =>
-                                      setReviewModerationReason((prev) => ({ ...prev, [String(review.id)]: event.target.value }))
-                                    }
-                                  />
-                                  <div className="flex flex-wrap gap-2">
-                                    <button
-                                      className="button button-primary"
-                                      type="button"
-                                      onClick={() => void handleModerateReview(review, 'APPROVED')}
-                                      disabled={working || review.status === 'APPROVED'}
-                                    >
-                                      {working && review.status !== 'APPROVED' ? 'Working...' : 'Approve'}
-                                    </button>
-                                    <button
-                                      className="button button-danger"
-                                      type="button"
-                                      onClick={() => void handleModerateReview(review, 'REJECTED')}
-                                      disabled={working || review.status === 'REJECTED'}
-                                    >
-                                      Reject
-                                    </button>
-                                    <button
-                                      className="button button-ghost"
-                                      type="button"
-                                      onClick={() => void handleModerateReview(review, 'HIDDEN')}
-                                      disabled={working || review.status === 'HIDDEN'}
-                                    >
-                                      Hide
-                                    </button>
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {adminReviews.length > 0 && (
-                  <div className="panel mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h4 className="mb-2">Selected review details</h4>
-                    <p className="form-hint">Open a review on the product page to view customer-facing rendering.</p>
-                  </div>
-                )}
-              </section>
-            )}
+            {activeNav === 'reviews' && <ReviewsTab />}
           </main>
         </div>
       </div>

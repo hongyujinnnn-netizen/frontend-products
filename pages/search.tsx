@@ -4,6 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import ProductCard from '../components/ProductCard';
+import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import { listProducts } from '../services/products';
 import type { Product } from '../types/product';
 
@@ -271,10 +272,11 @@ const SearchPage: NextPage = () => {
         )}
 
         {hasTerm && isLoading && (
-          <div className="empty-state">
-            <h2>Searching the catalog</h2>
-            <p>We are fetching matches from your Spring Boot API. Hang tight.</p>
-          </div>
+          <section className="product-grid">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </section>
         )}
 
         {hasTerm && !isLoading && hasResults && (

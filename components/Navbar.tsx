@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
-import { useCartCount } from '../hooks/useCartCount';
+import { useCart } from '../context/CartContext';
 
 const Navbar = () => {
   const { user, isAuthenticated } = useAuth();
@@ -11,34 +11,12 @@ const Navbar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [prevAuthState, setPrevAuthState] = useState<boolean | null>(null);
-  const cartCount = useCartCount();
+  const { itemCount: cartCount } = useCart();
   const router = useRouter();
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  useEffect(() => {
-    if (!isClient) return;
-    document.documentElement.setAttribute('data-theme', 'light');
-    window.localStorage.setItem('theme', 'light');
-  }, [isClient]);
-
-  useEffect(() => {
-    if (!isClient) return;
-    if (prevAuthState === null) {
-      setPrevAuthState(isAuthenticated);
-      return;
-    }
-    if (isAuthenticated && !prevAuthState && user && router.pathname === '/') {
-      const timer = setTimeout(() => {
-        window.location.reload();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-    setPrevAuthState(isAuthenticated);
-  }, [isAuthenticated, isClient, prevAuthState, user, router.pathname]);
 
   useEffect(() => {
     if (router.pathname === '/search' && typeof router.query.q === 'string') {

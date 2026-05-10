@@ -1,16 +1,16 @@
-import { useEffect, useState } from 'react';
+﻿import { useState } from 'react';
 import type { NextPage } from 'next';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useMessage } from '../hooks/useMessage';
 import { useOrders } from '../hooks/useOrders';
-import { getCartItems, clearCart } from '../utils/cart';
-import type { CartItem } from '../types/product';
+import { useCart } from '../context/CartContext';
 import ProtectedRoute from '../components/ProtectedRoute';
+import { formatCurrency } from '../utils/format';
 
 const CheckoutPage: NextPage = () => {
   const router = useRouter();
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const { items: cartItems, total, itemCount, clear } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState(1);
   const [shipping, setShipping] = useState({
@@ -29,19 +29,6 @@ const CheckoutPage: NextPage = () => {
   });
   const { showMessage } = useMessage();
   const { checkout } = useOrders();
-
-  // Load cart on mount
-  useEffect(() => {
-    const items = getCartItems();
-    setCartItems(items);
-  }, []);
-
-  const total = cartItems.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0
-  );
-
-  const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const validateStep = () => {
     if (step === 1) {
@@ -89,7 +76,7 @@ const CheckoutPage: NextPage = () => {
       }));
       // Create order
       await checkout(orderItems);
-      clearCart();
+      clear();
       router.replace('/cart').catch((err) => console.error('Redirect failed:', err));
     } catch (error) {
       console.error('Checkout error:', error);
@@ -274,9 +261,9 @@ const CheckoutPage: NextPage = () => {
                         </div>
                         <div className="cart-line-total">
                           <p className="form-hint">
-                            {item.quantity} x ${item.product.price.toFixed(2)}
+                            {item.quantity} x {formatCurrency(item.product.price)}
                           </p>
-                          <strong>${(item.product.price * item.quantity).toFixed(2)}</strong>
+                          <strong>{formatCurrency((item.product.price * item.quantity))}</strong>
                         </div>
                       </div>
                     ))}
@@ -291,7 +278,7 @@ const CheckoutPage: NextPage = () => {
             <div className="metric-grid grid gap-3">
               <div className="card stat rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <span className="stat-label">Subtotal</span>
-                <span className="stat-value">${total.toFixed(2)}</span>
+                <span className="stat-value">{formatCurrency(total)}</span>
               </div>
               <div className="card stat rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <span className="stat-label">Shipping</span>
@@ -304,7 +291,7 @@ const CheckoutPage: NextPage = () => {
               <div className="card stat summary-total-card rounded-lg border border-blue-200 bg-blue-50 p-3">
                 <span className="stat-label">Total</span>
                 <span className="stat-value summary-total-value">
-                  ${total.toFixed(2)}
+                  {formatCurrency(total)}
                 </span>
               </div>
             </div>

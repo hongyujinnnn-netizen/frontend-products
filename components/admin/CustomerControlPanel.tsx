@@ -2,6 +2,7 @@
 import type { MessageType } from '../../hooks/useMessage';
 import type { Order } from '../../types/order';
 import type { User } from '../../types/user';
+import { formatCurrency } from '../../utils/format';
 
 type CustomerRole = 'ADMIN' | 'USER';
 type CustomerStatus = 'ACTIVE' | 'DISABLED' | 'BANNED';
@@ -59,6 +60,8 @@ interface LocalUserDraft {
 }
 
 const CUSTOMERS_PER_PAGE = 8;
+const DAY_IN_MS = 86400000;
+const ACTIVITY_REFERENCE_TIME = Date.now();
 
 const ROLE_PERMISSION_DEFAULTS: Record<CustomerRole, PermissionKey[]> = {
   ADMIN: [
@@ -152,7 +155,7 @@ const CustomerControlPanel = ({ users, orders, loading, onDeleteUser, onChangeUs
         orders: 0,
         spent: 0,
         lastOrderAt: null,
-        lastSeenAt: new Date(Date.now() - ((user.id % 9) + 1) * 86400000).toISOString(),
+        lastSeenAt: new Date(ACTIVITY_REFERENCE_TIME - ((user.id % 9) + 1) * DAY_IN_MS).toISOString(),
       });
     });
     orders.forEach((order) => {
@@ -172,7 +175,7 @@ const CustomerControlPanel = ({ users, orders, loading, onDeleteUser, onChangeUs
   const customerRows = useMemo<CustomerViewModel[]>(() => {
     const baseRows = users.map((user) => {
       const role = roleOverrides[user.id] ?? roleFromApi(user.role);
-      const activity = activityByUser.get(user.id) ?? { orders: 0, spent: 0, lastOrderAt: null, lastSeenAt: new Date().toISOString() };
+      const activity = activityByUser.get(user.id) ?? { orders: 0, spent: 0, lastOrderAt: null, lastSeenAt: new Date(ACTIVITY_REFERENCE_TIME).toISOString() };
       return {
         id: user.id,
         username: profileOverrides[user.id]?.username ?? user.username,
@@ -195,7 +198,7 @@ const CustomerControlPanel = ({ users, orders, loading, onDeleteUser, onChangeUs
         role,
         status: statusOverrides[user.id] ?? 'ACTIVE',
         permissions: permissionOverrides[user.id] ?? ROLE_PERMISSION_DEFAULTS[role],
-        activity: { orders: 0, spent: 0, lastOrderAt: null, lastSeenAt: activityOverrides[user.id]?.lastSeenAt ?? new Date().toISOString() },
+        activity: { orders: 0, spent: 0, lastOrderAt: null, lastSeenAt: activityOverrides[user.id]?.lastSeenAt ?? new Date(ACTIVITY_REFERENCE_TIME).toISOString() },
       };
     });
 
@@ -225,7 +228,7 @@ const CustomerControlPanel = ({ users, orders, loading, onDeleteUser, onChangeUs
     active: customerRows.filter((row) => row.status === 'ACTIVE').length,
     disabled: customerRows.filter((row) => row.status === 'DISABLED').length,
     banned: customerRows.filter((row) => row.status === 'BANNED').length,
-    activeWeek: customerRows.filter((row) => Date.now() - new Date(row.activity.lastSeenAt).getTime() <= 7 * 86400000).length,
+    activeWeek: customerRows.filter((row) => ACTIVITY_REFERENCE_TIME - new Date(row.activity.lastSeenAt).getTime() <= 7 * DAY_IN_MS).length,
   }), [customerRows]);
 
   const deleteTarget = useMemo(
@@ -560,7 +563,7 @@ const CustomerControlPanel = ({ users, orders, loading, onDeleteUser, onChangeUs
                     <td><div className="customer-user-cell flex items-center gap-3"><div className="customer-avatar" aria-hidden="true">{getInitial(row.username)}</div><div><div className="customer-name">{row.username}</div><div className="customer-email">{row.email}</div><div className="customer-id">ID: {row.id}</div></div></div></td>
                     <td><select className="toolbar-input customer-inline-select h-10 w-36 rounded-md border border-slate-300 bg-white px-3 text-sm focus:border-blue-500 focus:outline-none" value={row.role} onChange={(event) => void updateRole(row.id, event.target.value as CustomerRole)} disabled={busyRoleId === row.id}><option value="ADMIN">Admin</option><option value="USER">User</option></select></td>
                     <td><div className="customer-status-pill flex items-center gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ${statusToneClass[row.status]}`}>{row.status === 'BANNED' && <span aria-label="banned">🚫</span>}{row.status}</span></div></td>
-                    <td><div className="cell-strong">{row.activity.orders} orders</div><div className="cell-sub">${row.activity.spent.toFixed(2)} spent</div><div className="cell-sub">Last seen: {formatDateTime(row.activity.lastSeenAt)}</div></td>
+                    <td><div className="cell-strong">{row.activity.orders} orders</div><div className="cell-sub">{formatCurrency(row.activity.spent)} spent</div><div className="cell-sub">Last seen: {formatDateTime(row.activity.lastSeenAt)}</div></td>
                     <td><span className={`customer-role-chip inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${roleToneClass[row.role]}`}>{roleLabel[row.role]}</span><div className="cell-sub">Permissions: {accessLevel(row.permissions.length)}</div></td>
                     <td>
                       <div className="customer-action-shell" onClick={(event) => event.stopPropagation()}>
@@ -610,7 +613,7 @@ const CustomerControlPanel = ({ users, orders, loading, onDeleteUser, onChangeUs
                   <div className="form-label"><span>Status</span><div className="mt-1 flex gap-1.5 flex-wrap"><button className={`px-2.5 py-1.5 rounded-full text-xs font-semibold ring-1 transition-all ${row.status === 'ACTIVE' ? statusToneClass['ACTIVE'] : 'bg-slate-100 text-slate-600 ring-slate-300 hover:bg-emerald-50'}`} onClick={() => void updateStatus(row.id, 'ACTIVE')} disabled={busyStatusId === row.id}>✓ Active</button><button className={`px-2.5 py-1.5 rounded-full text-xs font-semibold ring-1 transition-all ${row.status === 'DISABLED' ? statusToneClass['DISABLED'] : 'bg-slate-100 text-slate-600 ring-slate-300 hover:bg-amber-50'}`} onClick={() => void updateStatus(row.id, 'DISABLED')} disabled={busyStatusId === row.id}>⊘ Disabled</button><button className={`px-2.5 py-1.5 rounded-full text-xs font-semibold ring-1 transition-all ${row.status === 'BANNED' ? statusToneClass['BANNED'] : 'bg-slate-100 text-slate-600 ring-slate-300 hover:bg-rose-50'}`} onClick={() => void updateStatus(row.id, 'BANNED')} disabled={busyStatusId === row.id}>🚫 Banned</button></div></div>
                 </div>
                 <div className="customer-mobile-meta flex flex-wrap items-center gap-2"><span className={`customer-role-chip inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${roleToneClass[row.role]}`}>{roleLabel[row.role]}</span><span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ${statusToneClass[row.status]}`}>{row.status === 'BANNED' && <span aria-label="banned">🚫</span>}{row.status}</span></div>
-                <div className="cell-sub">{row.activity.orders} orders • ${row.activity.spent.toFixed(2)} spent</div>
+                <div className="cell-sub">{row.activity.orders} orders • {formatCurrency(row.activity.spent)} spent</div>
                 <div className="cell-sub">Last seen: {formatDateTime(row.activity.lastSeenAt)}</div>
                 <div className="customer-mobile-actions grid gap-2 sm:grid-cols-2">
                   <button className="button button-ghost rounded-full px-3 py-1.5 text-sm" type="button" onClick={() => runAction('activity', row)}>View activity</button>
@@ -700,12 +703,12 @@ const CustomerControlPanel = ({ users, orders, loading, onDeleteUser, onChangeUs
             <p className="form-hint">Recent order and account activity for monitoring.</p>
             <div className="customer-activity-grid grid gap-3 md:grid-cols-3">
               <article className="customer-activity-tile grid gap-1 rounded-md border border-slate-200 bg-slate-50 p-3"><span>Orders</span><strong>{activityTarget.activity.orders}</strong></article>
-              <article className="customer-activity-tile grid gap-1 rounded-md border border-slate-200 bg-slate-50 p-3"><span>Total spend</span><strong>${activityTarget.activity.spent.toFixed(2)}</strong></article>
+              <article className="customer-activity-tile grid gap-1 rounded-md border border-slate-200 bg-slate-50 p-3"><span>Total spend</span><strong>{formatCurrency(activityTarget.activity.spent)}</strong></article>
               <article className="customer-activity-tile grid gap-1 rounded-md border border-slate-200 bg-slate-50 p-3"><span>Last login</span><strong>{formatDateTime(activityTarget.activity.lastSeenAt)}</strong></article>
             </div>
             <div className="customer-activity-list grid gap-2">
               {activityTimeline.length === 0 ? <p className="form-hint">No recent orders.</p> : activityTimeline.map((order) => (
-                <div key={order.id} className="customer-activity-item flex items-center justify-between rounded-md border border-slate-200 bg-white p-3"><div><div className="cell-strong">Order #{order.id}</div><div className="cell-sub">{formatDateTime(order.createdAt)}</div></div><div className="cell-mono">${order.total.toFixed(2)}</div></div>
+                <div key={order.id} className="customer-activity-item flex items-center justify-between rounded-md border border-slate-200 bg-white p-3"><div><div className="cell-strong">Order #{order.id}</div><div className="cell-sub">{formatDateTime(order.createdAt)}</div></div><div className="cell-mono">{formatCurrency(order.total)}</div></div>
               ))}
             </div>
             <div className="form-actions flex flex-wrap justify-end gap-2"><button className="button button-primary rounded-full px-3 py-1.5 text-sm" type="button" onClick={() => setActivityUserId(null)}>Close</button></div>

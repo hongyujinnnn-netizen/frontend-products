@@ -9,7 +9,14 @@ import {
 import type { User } from '../types/user';
 import { signIn as apiSignIn, signUp as apiSignUp } from '../services/auth';
 import { getErrorMessage } from '../services/apiError';
-import { getAuthToken, storeAuthToken, clearAuthToken } from '../utils/auth';
+import {
+  getAuthToken,
+  storeAuthToken,
+  clearAuthToken,
+  isTokenExpired,
+  getRoleFromToken,
+  getIdentityFromToken,
+} from '../utils/auth';
 
 /**
  * Authentication Context
@@ -30,105 +37,6 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const USER_KEY = 'auth_user';
-
-interface TokenPayload {
-  [key: string]: unknown;
-}
-
-/**
- * Decode JWT token without verification (client-side only)
- */
-function decodeToken(token: string): TokenPayload | null {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    
-    const decoded = JSON.parse(atob(parts[1]));
-    return decoded;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Check if token is expired
- */
-function isTokenExpired(token: string): boolean {
-  const payload = decodeToken(token);
-  if (!payload) return true;
-  
-  const now = Math.floor(Date.now() / 1000);
-  const expRaw = payload.exp;
-  const exp =
-    typeof expRaw === 'number'
-      ? expRaw
-      : typeof expRaw === 'string'
-        ? Number(expRaw)
-        : Number.NaN;
-  if (!Number.isFinite(exp)) {
-    return true;
-  }
-  return exp < now;
-}
-
-/**
- * Extract role from JWT token
- */
-function getRoleFromToken(token: string): 'USER' | 'ADMIN' | null {
-  try {
-    const payload = decodeToken(token);
-    if (!payload) return null;
-
-    const role = payload.role || payload.roles || payload.authorities;
-    
-    if (Array.isArray(role) && role.length > 0) {
-      const roleStr = role[0].toString().toUpperCase();
-      return roleStr.includes('ADMIN') ? 'ADMIN' : 'USER';
-    }
-    
-    if (typeof role === 'string') {
-      const roleStr = role.toUpperCase();
-      return roleStr.includes('ADMIN') ? 'ADMIN' : 'USER';
-    }
-    
-    return 'USER';
-  } catch {
-    return 'USER';
-  }
-}
-
-const getIdentityFromToken = (token: string) => {
-  const payload = decodeToken(token);
-  if (!payload) {
-    return { id: 0, username: '', email: '' };
-  }
-
-  const pickString = (value: unknown) =>
-    typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
-
-  const username =
-    pickString(payload.username) ||
-    pickString(payload.userName) ||
-    pickString(payload.preferred_username) ||
-    pickString(payload.sub) ||
-    pickString(payload.name) ||
-    '';
-
-  let email = pickString(payload.email) || '';
-  if (!email && username.includes('@')) {
-    email = username;
-  }
-
-  const idRaw = payload.userId ?? payload.id ?? payload.user_id ?? payload.sub;
-  const id =
-    typeof idRaw === 'number'
-      ? idRaw
-      : typeof idRaw === 'string' && /^\d+$/.test(idRaw)
-        ? Number(idRaw)
-        : 0;
-
-  return { id, username, email };
-};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

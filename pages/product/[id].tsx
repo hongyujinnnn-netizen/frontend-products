@@ -1,4 +1,4 @@
-import type { NextPage } from 'next';
+﻿import type { NextPage } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -7,12 +7,13 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { getProduct, listProducts } from '../../services/products';
 import type { Product } from '../../types/product';
 import ProductCard from '../../components/ProductCard';
-import { addToCart } from '../../utils/cart';
+import { useCart } from '../../context/CartContext';
 import { isInWishlist, toggleWishlist } from '../../utils/wishlist';
 import { useMessage } from '../../hooks/useMessage';
 import { useAuth } from '../../context/AuthContext';
 import type { Review } from '../../types/review';
 import { createProductReview, getProductReviewSummary, listProductReviews, type ReviewSort } from '../../services/reviews';
+import { formatCurrency } from '../../utils/format';
 
 const placeholderHighlights = ['Premium materials built for daily use', 'Fast fulfillment with end-to-end tracking', 'Seamless integration with your existing checkout'];
 
@@ -88,6 +89,7 @@ const ProductDetailPage: NextPage = () => {
   const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
   const { showMessage } = useMessage();
   const { isAuthenticated } = useAuth();
+  const { addItem } = useCart();
 
   useEffect(() => {
     if (typeof id !== 'string') {
@@ -361,7 +363,7 @@ const ProductDetailPage: NextPage = () => {
     setIsAddingToCart(true);
     try {
       const nextQuantity = Math.min(quantity, Math.max(1, product.stock));
-      addToCart(product, nextQuantity);
+      addItem(product, nextQuantity);
       showMessage('success', `Added ${nextQuantity} item(s) to cart!`);
     } catch {
       showMessage('error', 'Failed to add item to cart');
@@ -384,7 +386,7 @@ const ProductDetailPage: NextPage = () => {
 
     try {
       const nextQuantity = Math.min(quantity, Math.max(1, product.stock));
-      addToCart(product, nextQuantity);
+      addItem(product, nextQuantity);
       await router.push('/checkout');
     } catch {
       showMessage('error', 'Unable to start checkout');
@@ -491,7 +493,7 @@ const ProductDetailPage: NextPage = () => {
                 onClick={handleToggleWishlist}
                 aria-label={isSaved ? 'Remove from wishlist' : 'Save to wishlist'}
               >
-                {isSaved ? '♥' : '♡'}
+                {isSaved ? 'â™¥' : 'â™¡'}
               </button>
               <span className={`product-stock-badge inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ${product.stock <= 0 ? 'is-empty bg-rose-100 text-rose-700 ring-rose-200' : product.stock < 4 ? 'is-low bg-amber-100 text-amber-700 ring-amber-200' : 'is-ok bg-emerald-100 text-emerald-700 ring-emerald-200'}`}>
                 {stockLabel}
@@ -531,11 +533,11 @@ const ProductDetailPage: NextPage = () => {
               <h2 className="product-detail-title">{product.name}</h2>
 
               <div className="product-price-row flex flex-wrap items-center justify-between gap-3">
-                <p className="product-price">${product.price.toFixed(2)}</p>
+                <p className="product-price">{formatCurrency(product.price)}</p>
                 <div className="product-rating-badge flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm">
                   <span className="rating-stars">{buildStarRow(Math.round(averageRating || 0))}</span>
                   <a href="#product-reviews">
-                    {(reviewSummaryCount ?? reviews.length) > 0 ? `${averageRating.toFixed(1)} · ${reviewSummaryCount ?? reviews.length} reviews` : 'No reviews yet'}
+                    {(reviewSummaryCount ?? reviews.length) > 0 ? `${averageRating.toFixed(1)} Â· ${reviewSummaryCount ?? reviews.length} reviews` : 'No reviews yet'}
                   </a>
                 </div>
               </div>
@@ -605,7 +607,7 @@ const ProductDetailPage: NextPage = () => {
                 <button className="button button-ghost rounded-full px-4 py-2 text-sm" type="button" onClick={handleBuyNow}>
                   Buy now
                 </button>
-                <span className="product-secure-note">Secure checkout • 30-day return</span>
+                <span className="product-secure-note">Secure checkout â€¢ 30-day return</span>
               </div>
             </div>
           </article>

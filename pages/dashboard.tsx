@@ -1,9 +1,10 @@
-import type { NextPage } from 'next';
+﻿import type { NextPage } from 'next';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useOrders } from '../hooks/useOrders';
 import { useAuth } from '../context/AuthContext';
+import { formatCurrency } from '../utils/format';
 
 const DashboardPage: NextPage = () => {
   const router = useRouter();
@@ -48,7 +49,7 @@ const DashboardPage: NextPage = () => {
           <div className="stat-card">
             <div className="stat-meta">
               <div className="stat-label">Total spend</div>
-              <div className="stat-value">${totalSpend.toFixed(2)}</div>
+              <div className="stat-value">{formatCurrency(totalSpend)}</div>
             </div>
           </div>
           <div className="stat-card">
@@ -91,7 +92,7 @@ const DashboardPage: NextPage = () => {
                       <p className="form-hint">{new Date(order.createdAt).toLocaleDateString()}</p>
                     </div>
                     <div className="cart-line-total">
-                      <strong>${order.total.toFixed(2)}</strong>
+                      <strong>{formatCurrency(order.total)}</strong>
                     </div>
                   </div>
                 ))}
