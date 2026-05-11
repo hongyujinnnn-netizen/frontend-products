@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { NextPage } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,11 +16,11 @@ import type { Order } from '../../types/order';
 import { formatCurrency } from '../../utils/format';
 
 const navItems = [
-  { label: 'Dashboard', icon: 'ðŸ“Š', target: 'dashboard' },
-  { label: 'Products',  icon: 'ðŸ“¦', target: 'products' },
-  { label: 'Orders',    icon: 'ðŸ§¾', target: 'orders' },
-  { label: 'Customers', icon: 'ðŸ‘¥', target: 'customers' },
-  { label: 'Reviews',   icon: 'â­', target: 'reviews' },
+  { label: 'Dashboard', icon: '📊', target: 'dashboard' },
+  { label: 'Products',  icon: '📦', target: 'products' },
+  { label: 'Orders',    icon: '🧾', target: 'orders' },
+  { label: 'Customers', icon: '👥', target: 'customers' },
+  { label: 'Reviews',   icon: '⭐', target: 'reviews' },
 ];
 
 const orderStatusColor: Record<string, string> = {

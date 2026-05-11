@@ -287,12 +287,12 @@ const Navbar = () => {
         }
 
         .sl-desktop .nav-search-desktop {
-          flex: 1 1 320px;
+          flex: 0 0 auto;
           display: flex;
           align-items: center;
-          min-width: 190px;
-          max-width: 440px;
-          margin-left: auto;
+          width: 320px;
+          min-width: 280px;
+          max-width: 340px;
           padding: 0;
           background: transparent;
           border: none;
@@ -301,44 +301,83 @@ const Navbar = () => {
         }
 
         .sl-desktop .nav-search-shell {
-          display: flex; align-items: center; gap: 10px; width: 100%;
-          padding: 5px;
-          background: rgba(248, 250, 252, 0.95);
-          border: 1px solid rgba(148, 163, 184, 0.22);
-          border-radius: 18px;
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
-          transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+          display: flex; align-items: center; gap: 6px; width: 100%;
+          height: 40px;
+          padding: 0 6px 0 10px;
+          background: rgba(0, 0, 0, 0.04);
+          border: none;
+          border-radius: 12px;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04);
+          transition: background 220ms ease, box-shadow 220ms ease;
+        }
+
+        .sl-desktop .nav-search-shell:hover {
+          background: rgba(0, 0, 0, 0.06);
         }
 
         .sl-desktop .nav-search-shell:focus-within {
-          border-color: rgba(245, 158, 11, 0.45);
-          box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12), inset 0 1px 0 rgba(255,255,255,0.85);
-          background: #fff;
+          background: #ffffff;
+          box-shadow:
+            0 0 0 4px rgba(0, 0, 0, 0.06),
+            0 1px 2px rgba(0, 0, 0, 0.04),
+            0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
         .sl-desktop .nav-search-icon {
           display: inline-flex; align-items: center; justify-content: center;
-          width: 34px; height: 34px; color: #94a3b8; flex: 0 0 auto;
+          width: 18px; height: 18px; color: #86868B; flex: 0 0 auto;
+          transition: color 220ms ease;
+        }
+
+        .sl-desktop .nav-search-shell:focus-within .nav-search-icon {
+          color: #515154;
         }
 
         .sl-desktop .nav-search-input {
-          flex: 1; min-width: 0; height: 40px; padding: 0 4px 0 0;
-          border: none; border-radius: 0; font-size: 14px; color: #0f172a;
+          flex: 1; min-width: 0; height: 100%; padding: 0 4px;
+          border: none; border-radius: 0;
+          font-size: 14px;
+          font-weight: 400;
+          letter-spacing: -0.01em;
+          color: #1d1d1f;
           background: transparent; outline: none;
+          font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+        }
+
+        .sl-desktop .nav-search-input::placeholder {
+          color: #86868B;
+          transition: color 220ms ease;
+        }
+
+        .sl-desktop .nav-search-shell:focus-within .nav-search-input::placeholder {
+          color: #b0b0b5;
         }
 
         .sl-desktop .nav-search-button {
-          height: 40px; padding: 0 16px; border: none; border-radius: 13px;
-          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-          color: #fffdf7; font-size: 13px; font-weight: 700; letter-spacing: .01em;
-          cursor: pointer; white-space: nowrap;
-          box-shadow: 0 12px 24px rgba(217,119,6,.2);
-          transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+          width: 28px; height: 28px; padding: 0;
+          border: none; border-radius: 8px;
+          background: rgba(0, 0, 0, 0.06);
+          color: #515154;
+          display: inline-flex; align-items: center; justify-content: center;
+          cursor: pointer;
+          opacity: 0;
+          transform: scale(0.85);
+          pointer-events: none;
+          transition: opacity 220ms ease, transform 220ms ease, background 220ms ease;
+        }
+
+        .sl-desktop .nav-search-shell.has-value .nav-search-button {
+          opacity: 1;
+          transform: scale(1);
+          pointer-events: auto;
         }
 
         .sl-desktop .nav-search-button:hover {
-          opacity: .96; transform: translateY(-1px);
-          box-shadow: 0 16px 28px rgba(217,119,6,.28);
+          background: rgba(0, 0, 0, 0.1);
+        }
+
+        .sl-desktop .nav-search-button svg {
+          width: 14px; height: 14px;
         }
 
         .sl-desktop .nav-links {
@@ -354,6 +393,7 @@ const Navbar = () => {
           justify-content: flex-start;
           animation: none;
           flex: 0 0 auto;
+          margin-left: auto;
         }
 
         .sl-desktop .nav-link {
@@ -431,7 +471,7 @@ const Navbar = () => {
 
         @media (min-width: 1200px) {
           .sl-desktop .nav-search-desktop {
-            flex-basis: 390px;
+            width: 340px;
           }
         }
 
@@ -448,9 +488,9 @@ const Navbar = () => {
             position: sticky;
             top: 0;
             z-index: 50;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: saturate(180%) blur(12px);
+            -webkit-backdrop-filter: saturate(180%) blur(12px);
             border-bottom: 0.5px solid var(--sl-color-border-soft);
           }
 
@@ -742,6 +782,31 @@ const Navbar = () => {
                 </Link>
               </div>
 
+              <form className="nav-search nav-search-desktop" onSubmit={handleSearchSubmit} role="search">
+                <div className={`nav-search-shell ${searchValue ? 'has-value' : ''}`}>
+                  <span className="nav-search-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="7" />
+                      <line x1="16.5" y1="16.5" x2="21" y2="21" />
+                    </svg>
+                  </span>
+                  <input
+                    aria-label="Search products"
+                    className="nav-search-input"
+                    placeholder="Search"
+                    autoComplete="off"
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                  />
+                  <button className="nav-search-button" type="submit" aria-label="Submit search" tabIndex={searchValue ? 0 : -1}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </button>
+                </div>
+              </form>
+
               <div className="nav-links" id="primary-navigation">
                 <Link className={`nav-link ${isFeaturedActive ? 'is-active' : ''}`} href="/product/featured">
                   <span className="nav-link-icon" aria-hidden="true">
@@ -785,26 +850,6 @@ const Navbar = () => {
                   </Link>
                 )}
               </div>
-
-              <form className="nav-search nav-search-desktop" onSubmit={handleSearchSubmit} role="search">
-                <div className="nav-search-shell">
-                  <span className="nav-search-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="18" height="18">
-                      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" fill="none" />
-                      <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </span>
-                  <input
-                    aria-label="Search products"
-                    className="nav-search-input"
-                    placeholder="Search the catalog"
-                    autoComplete="off"
-                    value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
-                  />
-                  <button className="nav-search-button" type="submit">Search</button>
-                </div>
-              </form>
 
               <div className="nav-actions">
                 {isClient &&
